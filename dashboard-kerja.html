@@ -4192,6 +4192,51 @@
                     })
                 };
             }
+            // Versi IndexedDB dari syncRows (lihat FirestoreTable.syncRows untuk
+            // penjelasan lengkap). IndexedDB tidak punya batas 500 operasi seperti
+            // Firestore, tapi tetap dibuat "hanya tulis yang berubah" supaya
+            // perilakunya konsisten dengan mode Firestore.
+            async syncRows(currentRows, docIdMap, snapshotMap) {
+                const store = await this._store('readwrite');
+                const stillPresentIds = new Set();
+                const toAdd = [], toUpdate = [], toDeleteIds = [];
+
+                currentRows.forEach(row => {
+                    const id = docIdMap.get(row);
+                    if (!id) {
+                        toAdd.push(row);
+                    } else {
+                        stillPresentIds.add(id);
+                        const prevJSON = snapshotMap.get(id);
+                        const curJSON = JSON.stringify(row);
+                        if (prevJSON !== curJSON) toUpdate.push({ id, row });
+                    }
+                });
+                snapshotMap.forEach((_, id) => { if (!stillPresentIds.has(id)) toDeleteIds.push(id); });
+
+                await new Promise((resolve, reject) => {
+                    let pending = toAdd.length + toUpdate.length + toDeleteIds.length;
+                    if (pending === 0) { resolve(); return; }
+                    let failed = null;
+                    const done = () => { pending--; if (pending === 0) { failed ? reject(failed) : resolve(); } };
+                    toAdd.forEach(row => {
+                        const req = store.add(row);
+                        req.onsuccess = () => { docIdMap.set(row, req.result); snapshotMap.set(req.result, JSON.stringify(row)); done(); };
+                        req.onerror = () => { failed = req.error; done(); };
+                    });
+                    toUpdate.forEach(({ id, row }) => {
+                        const req = store.put(Object.assign({}, row, { id }));
+                        req.onsuccess = () => { snapshotMap.set(id, JSON.stringify(row)); done(); };
+                        req.onerror = () => { failed = req.error; done(); };
+                    });
+                    toDeleteIds.forEach(id => {
+                        const req = store.delete(id);
+                        req.onsuccess = () => { snapshotMap.delete(id); done(); };
+                        req.onerror = () => { failed = req.error; done(); };
+                    });
+                });
+                return { added: toAdd.length, updated: toUpdate.length, deleted: toDeleteIds.length };
+            }
         }
 
         // ================================================================
@@ -4305,9 +4350,20 @@
             async clear() {
                 try {
                     const snap = await this.col.get();
-                    const batch = fsdb.batch();
-                    snap.docs.forEach(d => batch.delete(d.ref));
-                    await batch.commit();
+                    const docs = snap.docs;
+                    // PENTING: Firestore membatasi maksimal 500 operasi per batch.
+                    // Kalau semua dokumen dihapus dalam SATU batch, begitu jumlah
+                    // dokumen lewat 500, batch.commit() akan GAGAL TOTAL dengan
+                    // error "Transaction too big" — dan karena batch bersifat
+                    // all-or-nothing, tidak ada yang terhapus, tapi proses SAVE
+                    // (yang memanggil clear() lalu bulkAdd()) jadi ikut gagal
+                    // setiap saat. Makanya di sini dipecah jadi beberapa batch
+                    // kecil (maks 450 per batch), sama seperti pola di bulkAdd().
+                    for (let i = 0; i < docs.length; i += 450) {
+                        const batch = fsdb.batch();
+                        docs.slice(i, i + 450).forEach(d => batch.delete(d.ref));
+                        await batch.commit();
+                    }
                 } catch (e) { throw new Error(pesanErrorFirestore(e, 'mengosongkan data (' + this.name + ')')); }
             }
             async delete(id) {
@@ -4331,6 +4387,80 @@
                         }
                     })
                 };
+            }
+            // ------------------------------------------------------------------
+            // SIMPAN INKREMENTAL: hanya kirim baris yang baru/berubah/dihapus,
+            // bukan hapus-semua-lalu-tulis-ulang-semua seperti clear()+bulkAdd().
+            //   - currentRows      : array baris saat ini (mis. salesData)
+            //   - docIdMap         : WeakMap(rowObject -> idDokumen), diisi/dibaca
+            //                        untuk tahu baris mana yang sudah pernah tersimpan
+            //   - snapshotMap      : Map(idDokumen -> JSON string isi terakhir yang
+            //                        dikonfirmasi tersimpan di server)
+            // Kedua map di atas diperbarui langsung (mutate in place) setelah
+            // proses berhasil, supaya save berikutnya tahu apa yang sudah sinkron.
+            // ------------------------------------------------------------------
+            async syncRows(currentRows, docIdMap, snapshotMap) {
+                try {
+                    const ops = [];
+                    const stillPresentIds = new Set();
+
+                    currentRows.forEach(row => {
+                        const id = docIdMap.get(row);
+                        if (!id) {
+                            // Baris baru (belum ada id Firestore) -> perlu ditambahkan.
+                            // this.col.doc() membuat id barunya di sisi klien SEKARANG
+                            // juga (tanpa perlu tunggu commit), jadi bisa langsung kita
+                            // simpan ke docIdMap setelah batch berhasil.
+                            const ref = this.col.doc();
+                            ops.push({ type: 'add', ref, row, id: ref.id });
+                        } else {
+                            stillPresentIds.add(id);
+                            const prevJSON = snapshotMap.get(id);
+                            const curJSON = JSON.stringify(row);
+                            if (prevJSON !== curJSON) {
+                                ops.push({ type: 'update', ref: this.col.doc(id), row, id });
+                            }
+                            // Kalau isinya sama persis dengan snapshot terakhir -> SKIP,
+                            // tidak perlu kirim apa-apa ke server untuk baris ini.
+                        }
+                    });
+
+                    // Baris yang dulu ada di snapshot tapi sekarang sudah tidak ada
+                    // lagi di currentRows -> berarti dihapus dari sisi aplikasi.
+                    snapshotMap.forEach((_, id) => {
+                        if (!stillPresentIds.has(id)) {
+                            ops.push({ type: 'delete', ref: this.col.doc(id), id });
+                        }
+                    });
+
+                    // Kirim semua operasi dalam batch kecil (maks 450 op/batch,
+                    // batas Firestore adalah 500 op/batch).
+                    for (let i = 0; i < ops.length; i += 450) {
+                        const batch = fsdb.batch();
+                        ops.slice(i, i + 450).forEach(op => {
+                            if (op.type === 'add') batch.set(op.ref, bersihkanUntukFirestore(op.row));
+                            else if (op.type === 'update') batch.set(op.ref, bersihkanUntukFirestore(op.row), { merge: false });
+                            else if (op.type === 'delete') batch.delete(op.ref);
+                        });
+                        await batch.commit();
+                    }
+
+                    // Baru setelah SEMUA batch berhasil, perbarui docIdMap & snapshotMap
+                    // supaya kalau ada error di tengah, save berikutnya masih akan
+                    // mencoba ulang operasi yang belum tercatat berhasil.
+                    ops.forEach(op => {
+                        if (op.type === 'delete') {
+                            snapshotMap.delete(op.id);
+                        } else {
+                            docIdMap.set(op.row, op.id);
+                            snapshotMap.set(op.id, JSON.stringify(op.row));
+                        }
+                    });
+
+                    return { added: ops.filter(o => o.type === 'add').length,
+                        updated: ops.filter(o => o.type === 'update').length,
+                        deleted: ops.filter(o => o.type === 'delete').length };
+                } catch (e) { throw new Error(pesanErrorFirestore(e, 'menyimpan perubahan (' + this.name + ')')); }
             }
         }
 
@@ -4605,6 +4735,22 @@
         // ================================================================
         let cashDataMap = {};
         let salesData = [];
+        // ------------------------------------------------------------------
+        // Pelacak sinkronisasi INKREMENTAL untuk salesData (Bank Data Penjualan).
+        // Dulu setiap simpan = hapus SEMUA dokumen sales lalu tulis ulang semua
+        // dari awal (rawan gagal & boros kalau datanya sudah banyak). Sekarang
+        // hanya baris yang benar-benar baru/berubah/dihapus yang dikirim ke
+        // server, memakai 2 struktur ini:
+        //   - salesDocIds: WeakMap dari OBJEK baris -> id dokumen Firestore-nya
+        //     (row yang belum pernah tersimpan tidak ada di sini = dianggap baru)
+        //   - salesSyncedSnapshot: Map dari id dokumen -> isi baris (dalam
+        //     bentuk JSON string) SEPERTI TERAKHIR KALI dikonfirmasi tersimpan
+        //     di server, dipakai untuk mendeteksi baris mana yang isinya
+        //     berubah sejak save terakhir (supaya tidak ikut ditulis ulang
+        //     kalau memang tidak berubah).
+        // ------------------------------------------------------------------
+        let salesDocIds = new WeakMap();
+        let salesSyncedSnapshot = new Map();
         let cashBulan = '2026-07';
         let cashFiltered = [];
         let cashPage = 1;
@@ -5108,14 +5254,27 @@
         async function loadSalesData() {
             try {
                 const data = await db.sales.toArray();
-                if (data.length > 0) { salesData = data.map(({ id, ...rest }) => rest); } else { salesData = []; }
+                // Reset pelacak sinkronisasi setiap kali muat ulang dari server,
+                // supaya salesDocIds & salesSyncedSnapshot selalu mencerminkan
+                // persis apa yang ada di server SAAT INI (bukan sisa sesi lama).
+                salesDocIds = new WeakMap();
+                salesSyncedSnapshot = new Map();
+                if (data.length > 0) {
+                    salesData = data.map(({ id, ...rest }) => {
+                        salesDocIds.set(rest, id);
+                        salesSyncedSnapshot.set(id, JSON.stringify(rest));
+                        return rest;
+                    });
+                } else { salesData = []; }
                 // Urutkan TANGGAL TERTUA dulu. PENTING sejak pindah ke Firestore:
                 // Firestore TIDAK menjamin urutan dokumen mengikuti urutan input
                 // (beda dengan IndexedDB yang dulu kebetulan berurutan karena
                 // auto-increment id). Sort ini di sumber data supaya SEMUA tabel
                 // yang memakai salesData (Bank Data Penjualan, Cek Cash, Cek
                 // Piutang, dst) otomatis ikut terurut, tidak perlu diurutkan
-                // satu-satu di tiap tabel.
+                // satu-satu di tiap tabel. (Catatan: sort cuma menukar URUTAN
+                // elemen array, objek baris & referensinya tetap sama, jadi
+                // salesDocIds (WeakMap per-objek) tetap valid setelah sort ini.)
                 salesData.sort((a, b) => String(a.Tanggal || '').localeCompare(String(b.Tanggal || '')) ||
                     String(a['No.Faktur'] || '').localeCompare(String(b['No.Faktur'] || '')));
             } catch (e) { console.warn('Gagal muat sales:', e);
@@ -5124,13 +5283,13 @@
 
         async function saveSalesData() {
             try {
-                await db.transaction('rw', db.sales, async () => {
-                    await db.sales.clear();
-                    const CHUNK = 500;
-                    for (let i = 0; i < salesData.length; i += CHUNK) {
-                        await db.sales.bulkAdd(salesData.slice(i, i + CHUNK));
-                    }
-                });
+                // INKREMENTAL: hanya baris baru/berubah/dihapus yang dikirim ke
+                // server (bukan hapus-semua-lalu-tulis-ulang-semua seperti dulu).
+                // Jauh lebih cepat & tidak akan lagi kena error "Transaction too
+                // big" karena jumlah operasi per save biasanya jauh di bawah 500,
+                // kecuali memang lagi impor banyak baris sekaligus (yang tetap
+                // aman karena syncRows() otomatis membaginya jadi beberapa batch).
+                await db.sales.syncRows(salesData, salesDocIds, salesSyncedSnapshot);
                 filterCache.clear();
                 autoBackupSalesToLocalStorage();
                 return true;
