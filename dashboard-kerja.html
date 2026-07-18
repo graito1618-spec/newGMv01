@@ -3618,6 +3618,9 @@
                     <div class="menu-item">
                         <button type="button" class="btn btn-outline" id="pengeluaranPrintBtn" style="flex:1;margin:0;">🖨️ Print / Cetak Laporan</button>
                     </div>
+                    <div class="menu-item">
+                        <button type="button" class="btn btn-reset" id="pengeluaranHapusBulanBtn" style="flex:1;margin:0;">🗑️ Hapus Semua Data Bulan Ini</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -10378,6 +10381,21 @@
             document.getElementById('pgDetailModal').classList.remove('show');
             showToast('🗑 Data tanggal ' + fmtTanggal(tanggal) + ' dihapus.', 'success');
         }
+
+        async function pgHapusSemuaBulanIni() {
+            const data = getPengeluaranData();
+            if (!data || data.length === 0) { showToast('Tidak ada data di bulan ini.', 'info'); return; }
+            const label = (document.getElementById('bulanPengeluaran').selectedOptions[0] || {}).textContent || pengeluaranBulan;
+            if (!confirm('⚠️ Ini akan MENGHAPUS SEMUA data Pengeluaran & Masuk untuk bulan ' + label +
+                    ' (' + data.length + ' hari data). Tindakan ini tidak bisa dibatalkan. Lanjutkan?')) return;
+            if (!confirm('Yakin sekali? Ketik OK di kotak berikutnya untuk konfirmasi terakhir.')) return;
+            pengeluaranDataMap[pengeluaranBulan] = [];
+            await savePengeluaranData(pengeluaranBulan);
+            renderPengeluaran();
+            showToast('🗑 Semua data Pengeluaran bulan ' + label + ' sudah dihapus. Silakan upload ulang Excel-nya.',
+                'success');
+        }
+        document.getElementById('pengeluaranHapusBulanBtn').addEventListener('click', pgHapusSemuaBulanIni);
 
         document.getElementById('pgDetailModalClose').addEventListener('click', function() {
             document.getElementById('pgDetailModal').classList.remove('show');
