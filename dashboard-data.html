@@ -2799,7 +2799,7 @@
             cursor: pointer;
         }
         .rap-scope .btn-proses:hover { background: #d84a37; }
-        .rap-scope .btn-proses:disabled { background: #e2e8f0; color: #64748b; cursor: not-allowed; }
+        .rap-scope .btn-proses:disabled { background: var(--rap-blue); color: #ffffff; opacity: .55; cursor: not-allowed; }
 
         .rap-scope .status-msg {
             font-size: 12px;
@@ -2921,8 +2921,8 @@
             box-shadow: 0 6px 14px rgba(0,0,0,.24);
         }
         .rap-scope .btn-download:disabled, .rap-scope .btn-kirim:disabled {
-            border-color: #cbd5e1; color: #64748b; cursor: not-allowed; background: #e2e8f0;
-            box-shadow: none; transform: none;
+            border-color: var(--rap-blue); color: #ffffff; cursor: not-allowed; background: var(--rap-blue);
+            opacity: .55; box-shadow: none; transform: none;
         }
         .rap-scope .btn-kirim {
             background: var(--rap-green);
@@ -2930,7 +2930,7 @@
             color: #ffffff;
         }
         .rap-scope .btn-kirim:hover { background: #17612e; border-color: #17612e; transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,.24); }
-        .rap-scope .btn-kirim:disabled { background: #e2e8f0; border-color: #cbd5e1; color: #64748b; box-shadow: none; transform: none; }
+        .rap-scope .btn-kirim:disabled { background: var(--rap-green); border-color: var(--rap-green); color: #ffffff; opacity: .55; box-shadow: none; transform: none; }
         .rap-scope .result-actions {
             display: flex;
             gap: 12px;
