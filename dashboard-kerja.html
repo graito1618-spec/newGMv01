@@ -10082,6 +10082,19 @@
         // Parse baris-baris sheet "LAPORAN KAS KECIL" (format kas kecil harian:
         // Tanggal | Keterangan | Masuk | Pengeluaran Kantor | Burung | Total | Saldo)
         // menjadi rekap per-hari, dengan rincian transaksi.
+        // Konversi serial tanggal Excel (mis. 46204) ke "YYYY-MM-DD" TANPA lewat objek Date lokal,
+        // supaya tidak kena bug pergeseran 1 hari akibat timezone browser (lihat catatan di pgProcessExcelFile).
+        // Rumus ini murni aritmatika hari (epoch Excel = 30 Des 1899), aman di timezone manapun.
+        function excelSerialToYMD(serial) {
+            const utcDays = Math.round(serial) - 25569; // 25569 = jumlah hari dari 30 Des 1899 ke 1 Jan 1970
+            const ms = utcDays * 86400 * 1000;
+            const d = new Date(ms);
+            const y = d.getUTCFullYear();
+            const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const dd = String(d.getUTCDate()).padStart(2, '0');
+            return `${y}-${m}-${dd}`;
+        }
+
         function parsePengeluaranDariRows(rows) {
             const hasil = [];
             let current = null;
@@ -10096,16 +10109,22 @@
                 const saldo = parseNumber(row[6]);
 
                 if (ket && ket.toUpperCase() === 'TOTAL') break; // baris ringkasan akhir laporan
+                // FIX: label "TOTAL" di file ini biasanya ada di kolom A (kolom tanggal), bukan kolom B.
+                // Tanpa cek ini, baris ringkasan total bulan bisa "bocor" menimpa totalPengeluaran hari terakhir.
+                if (typeof tglCell === 'string' && tglCell.trim().toUpperCase() === 'TOTAL') break;
 
+                // tglCell sekarang berupa NUMBER (serial Excel mentah), bukan Date object,
+                // karena cellDates:true sudah dimatikan di pgProcessExcelFile.
                 let tgl = null;
-                if (tglCell instanceof Date && !isNaN(tglCell.getTime())) tgl = tglCell;
+                if (typeof tglCell === 'number' && tglCell > 25569 && tglCell < 60000) tgl = tglCell;
+                else if (tglCell instanceof Date && !isNaN(tglCell.getTime())) {
+                    // fallback jaga-jaga kalau suatu saat ada Date object masuk lagi
+                    tgl = (tglCell.getTime() / 86400000) + 25569;
+                }
 
                 if (tgl) {
                     if (current) hasil.push(current);
-                    const y = tgl.getFullYear();
-                    const m = String(tgl.getMonth() + 1).padStart(2, '0');
-                    const d = String(tgl.getDate()).padStart(2, '0');
-                    current = { tanggal: `${y}-${m}-${d}`, transaksi: [], masuk: 0, totalPengeluaran: 0, saldo: 0 };
+                    current = { tanggal: excelSerialToYMD(tgl), transaksi: [], masuk: 0, totalPengeluaran: 0, saldo: 0 };
                     if (ket) {
                         if (masuk) current.transaksi.push({ id: pgUid(), ket, jumlah: masuk, tipe: 'masuk' });
                         else if (kantor || burung) current.transaksi.push({ id: pgUid(), ket, jumlah: kantor || burung,
@@ -10473,11 +10492,16 @@
             reader.onload = async function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    // PENTING: cellDates:true SENGAJA tidak dipakai di sini. SheetJS punya bug dikenal:
+                    // saat cellDates:true dipakai di browser dengan timezone UTC+ (mis. WIB), tanggal
+                    // yang dibaca dari Excel bisa mundur 1 hari. Solusinya: baca sebagai serial number
+                    // mentah (raw), lalu konversi manual di parsePengeluaranDariRows() pakai perhitungan
+                    // yang aman dari timezone (lihat fungsi excelSerialToYMD).
+                    const workbook = XLSX.read(data, { type: 'array' });
                     let sheetName = workbook.SheetNames.find(n => n.toUpperCase().includes('KAS KECIL'));
                     if (!sheetName) sheetName = workbook.SheetNames[0];
                     const sheet = workbook.Sheets[sheetName];
-                    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
                     const hasil = parsePengeluaranDariRows(rows);
                     if (hasil.length === 0) { showToast('Tidak ada data ditemukan di sheet "' + sheetName + '".',
                         'warning'); return; }
