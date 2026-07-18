@@ -2829,7 +2829,8 @@
             <div class="field"><label>Cari Faktur</label><input type="text" id="fFakturSales" placeholder="cth: 011003260700046"></div>
             <div class="field"><label>Produk</label><input type="text" id="fProdukSales" placeholder="cth: Indomie"></div>
             <div class="field"><label>Sales</label><select id="fSalesSales"><option value="">Semua</option></select></div>
-            <div class="field"><label>Tanggal</label><input type="date" id="fTanggalSales"></div>
+            <div class="field"><label>Dari Tanggal</label><input type="date" id="fTanggalSalesFrom"></div>
+            <div class="field"><label>Sampai Tanggal</label><input type="date" id="fTanggalSalesTo"></div>
             <div class="field"><label>Periode</label><select id="fBulanSales"><option value="">Semua</option></select></div>
             <div class="field"><label>Kategori</label><select id="fKategoriSales"><option value="">Semua</option><option value="Fitri">Fitri</option><option value="Rupa Rupa">Rupa Rupa</option></select></div>
             <div class="field"><label>Pembayaran</label><select id="fPembayaranSales"><option value="">Semua</option><option value="Cash">Cash</option><option value="Tempo">Tempo</option></select></div>
@@ -5436,11 +5437,12 @@
             const faktur = document.getElementById('fFakturSales').value.trim().toLowerCase();
             const produk = document.getElementById('fProdukSales').value.trim().toLowerCase();
             const sales = document.getElementById('fSalesSales').value;
-            const tanggal = document.getElementById('fTanggalSales').value;
+            const tanggalFrom = document.getElementById('fTanggalSalesFrom').value;
+            const tanggalTo = document.getElementById('fTanggalSalesTo').value;
             const bulan = document.getElementById('fBulanSales').value;
             const pembayaran = document.getElementById('fPembayaranSales').value;
             const kategori = document.getElementById('fKategoriSales').value;
-            const key = `${faktur}|${produk}|${sales}|${tanggal}|${bulan}|${pembayaran}|${kategori}`;
+            const key = `${faktur}|${produk}|${sales}|${tanggalFrom}|${tanggalTo}|${bulan}|${pembayaran}|${kategori}`;
             if (filterCache.has(key)) return filterCache.get(key);
             
             const result = salesData.filter(r => {
@@ -5450,7 +5452,7 @@
                 // SEARCH FILTER: Bypass period filter (tanggal & bulan) jika ada search
                 if (faktur) {
                     if (!(r['No.Faktur'] || '').toLowerCase().includes(faktur)) return false;
-                    // Jika ada search faktur, apply sales, pembayaran, kategori tapi SKIP tanggal/bulan
+                    // Jika ada search faktur, apply sales, pembayaran, kategori tapi SKIP tanggal/bulan (range)
                     if (sales && r.Sales !== sales) return false;
                     if (pembayaran && r.Pembayaran !== pembayaran) return false;
                     if (kategori === 'Fitri' && !(r.Produk || '').toLowerCase().includes('fitri')) return false;
@@ -5460,7 +5462,8 @@
                 
                 // NORMAL FILTER: Apply semua filter termasuk periode
                 if (sales && r.Sales !== sales) return false;
-                if (tanggal && r.Tanggal !== tanggal) return false;
+                if (tanggalFrom && r.Tanggal < tanggalFrom) return false;
+                if (tanggalTo && r.Tanggal > tanggalTo) return false;
                 if (bulan && periodKey(r.Tanggal) !== bulan) return false;
                 if (pembayaran && r.Pembayaran !== pembayaran) return false;
                 if (kategori === 'Fitri' && !(r.Produk || '').toLowerCase().includes('fitri')) return false;
@@ -5476,7 +5479,8 @@
         function renderSales() {
             const allFiltered = getFilteredSales();
             const tbody = document.getElementById('salesTableBody');
-            const tanggalFilterActive = !!document.getElementById('fTanggalSales').value;
+            const tanggalFilterActive = !!document.getElementById('fTanggalSalesFrom').value || !!document
+                .getElementById('fTanggalSalesTo').value;
             let rows;
             if (tanggalFilterActive || allFiltered.length === 0) {
                 rows = allFiltered;
@@ -5530,7 +5534,9 @@
         }
         const debouncedRenderSales = debounce(() => { salesCurrentDateIndex = Infinity;
             renderSales(); }, 300);
-        ['fFakturSales', 'fProdukSales', 'fSalesSales', 'fTanggalSales', 'fBulanSales', 'fPembayaranSales', 'fKategoriSales'].forEach(
+        ['fFakturSales', 'fProdukSales', 'fSalesSales', 'fTanggalSalesFrom', 'fTanggalSalesTo', 'fBulanSales',
+            'fPembayaranSales', 'fKategoriSales'
+        ].forEach(
         id => {
             const el = document.getElementById(id);
             if (el) { el.addEventListener('input', debouncedRenderSales);
@@ -5545,7 +5551,8 @@
             document.getElementById('fFakturSales').value = '';
             document.getElementById('fProdukSales').value = '';
             document.getElementById('fSalesSales').value = '';
-            document.getElementById('fTanggalSales').value = '';
+            document.getElementById('fTanggalSalesFrom').value = '';
+            document.getElementById('fTanggalSalesTo').value = '';
             document.getElementById('fBulanSales').value = '';
             userSetBulan.sales = true;
             document.getElementById('fPembayaranSales').value = '';
