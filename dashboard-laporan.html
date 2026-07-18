@@ -4967,6 +4967,15 @@
             try {
                 const data = await db.sales.toArray();
                 if (data.length > 0) { salesData = data.map(({ id, ...rest }) => rest); } else { salesData = []; }
+                // Urutkan TANGGAL TERTUA dulu. PENTING sejak pindah ke Firestore:
+                // Firestore TIDAK menjamin urutan dokumen mengikuti urutan input
+                // (beda dengan IndexedDB yang dulu kebetulan berurutan karena
+                // auto-increment id). Sort ini di sumber data supaya SEMUA tabel
+                // yang memakai salesData (Bank Data Penjualan, Cek Cash, Cek
+                // Piutang, dst) otomatis ikut terurut, tidak perlu diurutkan
+                // satu-satu di tiap tabel.
+                salesData.sort((a, b) => String(a.Tanggal || '').localeCompare(String(b.Tanggal || '')) ||
+                    String(a['No.Faktur'] || '').localeCompare(String(b['No.Faktur'] || '')));
             } catch (e) { console.warn('Gagal muat sales:', e);
                 salesData = []; }
         }
@@ -6243,6 +6252,9 @@
                     overdueDays, tanggalBayar, produk: r.Produk, kategori: ptIsFitri(r.Produk) ? 'fitri' :
                         'rupa', pembayaran: r.Pembayaran || 'Tempo' });
             });
+            // Urutkan berdasarkan Tgl Transaksi TERTUA dulu (lihat catatan di loadSalesData).
+            rows.sort((a, b) => String(a.tanggal || '').localeCompare(String(b.tanggal || '')) ||
+                String(a.noFaktur || '').localeCompare(String(b.noFaktur || '')));
             return rows;
         }
 
