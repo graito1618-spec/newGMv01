@@ -4049,6 +4049,47 @@
                     })
                 };
             }
+            async syncRows(currentRows, docIdMap, snapshotMap) {
+                const store = await this._store('readwrite');
+                const stillPresentIds = new Set();
+                const toAdd = [], toUpdate = [], toDeleteIds = [];
+
+                currentRows.forEach(row => {
+                    const id = docIdMap.get(row);
+                    if (!id) {
+                        toAdd.push(row);
+                    } else {
+                        stillPresentIds.add(id);
+                        const prevJSON = snapshotMap.get(id);
+                        const curJSON = JSON.stringify(row);
+                        if (prevJSON !== curJSON) toUpdate.push({ id, row });
+                    }
+                });
+                snapshotMap.forEach((_, id) => { if (!stillPresentIds.has(id)) toDeleteIds.push(id); });
+
+                await new Promise((resolve, reject) => {
+                    let pending = toAdd.length + toUpdate.length + toDeleteIds.length;
+                    if (pending === 0) { resolve(); return; }
+                    let failed = null;
+                    const done = () => { pending--; if (pending === 0) { failed ? reject(failed) : resolve(); } };
+                    toAdd.forEach(row => {
+                        const req = store.add(row);
+                        req.onsuccess = () => { docIdMap.set(row, req.result); snapshotMap.set(req.result, JSON.stringify(row)); done(); };
+                        req.onerror = () => { failed = req.error; done(); };
+                    });
+                    toUpdate.forEach(({ id, row }) => {
+                        const req = store.put(Object.assign({}, row, { id }));
+                        req.onsuccess = () => { snapshotMap.set(id, JSON.stringify(row)); done(); };
+                        req.onerror = () => { failed = req.error; done(); };
+                    });
+                    toDeleteIds.forEach(id => {
+                        const req = store.delete(id);
+                        req.onsuccess = () => { snapshotMap.delete(id); done(); };
+                        req.onerror = () => { failed = req.error; done(); };
+                    });
+                });
+                return { added: toAdd.length, updated: toUpdate.length, deleted: toDeleteIds.length };
+            }
         }
 
         // ================================================================
@@ -4162,9 +4203,15 @@
             async clear() {
                 try {
                     const snap = await this.col.get();
-                    const batch = fsdb.batch();
-                    snap.docs.forEach(d => batch.delete(d.ref));
-                    await batch.commit();
+                    const docs = snap.docs;
+                    // Dipecah jadi batch maks 450 dokumen (limit Firestore: 500
+                    // operasi/batch) supaya tidak gagal "Transaction too big"
+                    // begitu jumlah dokumen lewat 500.
+                    for (let i = 0; i < docs.length; i += 450) {
+                        const batch = fsdb.batch();
+                        docs.slice(i, i + 450).forEach(d => batch.delete(d.ref));
+                        await batch.commit();
+                    }
                 } catch (e) { throw new Error(pesanErrorFirestore(e, 'mengosongkan data (' + this.name + ')')); }
             }
             async delete(id) {
@@ -4188,6 +4235,56 @@
                         }
                     })
                 };
+            }
+            async syncRows(currentRows, docIdMap, snapshotMap) {
+                try {
+                    const ops = [];
+                    const stillPresentIds = new Set();
+
+                    currentRows.forEach(row => {
+                        const id = docIdMap.get(row);
+                        if (!id) {
+                            const ref = this.col.doc();
+                            ops.push({ type: 'add', ref, row, id: ref.id });
+                        } else {
+                            stillPresentIds.add(id);
+                            const prevJSON = snapshotMap.get(id);
+                            const curJSON = JSON.stringify(row);
+                            if (prevJSON !== curJSON) {
+                                ops.push({ type: 'update', ref: this.col.doc(id), row, id });
+                            }
+                        }
+                    });
+
+                    snapshotMap.forEach((_, id) => {
+                        if (!stillPresentIds.has(id)) {
+                            ops.push({ type: 'delete', ref: this.col.doc(id), id });
+                        }
+                    });
+
+                    for (let i = 0; i < ops.length; i += 450) {
+                        const batch = fsdb.batch();
+                        ops.slice(i, i + 450).forEach(op => {
+                            if (op.type === 'add') batch.set(op.ref, bersihkanUntukFirestore(op.row));
+                            else if (op.type === 'update') batch.set(op.ref, bersihkanUntukFirestore(op.row), { merge: false });
+                            else if (op.type === 'delete') batch.delete(op.ref);
+                        });
+                        await batch.commit();
+                    }
+
+                    ops.forEach(op => {
+                        if (op.type === 'delete') {
+                            snapshotMap.delete(op.id);
+                        } else {
+                            docIdMap.set(op.row, op.id);
+                            snapshotMap.set(op.id, JSON.stringify(op.row));
+                        }
+                    });
+
+                    return { added: ops.filter(o => o.type === 'add').length,
+                        updated: ops.filter(o => o.type === 'update').length,
+                        deleted: ops.filter(o => o.type === 'delete').length };
+                } catch (e) { throw new Error(pesanErrorFirestore(e, 'menyimpan perubahan (' + this.name + ')')); }
             }
         }
 
@@ -4462,6 +4559,8 @@
         // ================================================================
         let cashDataMap = {};
         let salesData = [];
+        let salesDocIds = new WeakMap();
+        let salesSyncedSnapshot = new Map();
         let cashBulan = '2026-07';
         let cashFiltered = [];
         let cashPage = 1;
@@ -4965,7 +5064,15 @@
         async function loadSalesData() {
             try {
                 const data = await db.sales.toArray();
-                if (data.length > 0) { salesData = data.map(({ id, ...rest }) => rest); } else { salesData = []; }
+                salesDocIds = new WeakMap();
+                salesSyncedSnapshot = new Map();
+                if (data.length > 0) {
+                    salesData = data.map(({ id, ...rest }) => {
+                        salesDocIds.set(rest, id);
+                        salesSyncedSnapshot.set(id, JSON.stringify(rest));
+                        return rest;
+                    });
+                } else { salesData = []; }
                 // Urutkan TANGGAL TERTUA dulu. PENTING sejak pindah ke Firestore:
                 // Firestore TIDAK menjamin urutan dokumen mengikuti urutan input
                 // (beda dengan IndexedDB yang dulu kebetulan berurutan karena
@@ -4981,13 +5088,9 @@
 
         async function saveSalesData() {
             try {
-                await db.transaction('rw', db.sales, async () => {
-                    await db.sales.clear();
-                    const CHUNK = 500;
-                    for (let i = 0; i < salesData.length; i += CHUNK) {
-                        await db.sales.bulkAdd(salesData.slice(i, i + CHUNK));
-                    }
-                });
+                // INKREMENTAL: hanya baris baru/berubah/dihapus yang dikirim ke
+                // server (bukan hapus-semua-lalu-tulis-ulang-semua seperti dulu).
+                await db.sales.syncRows(salesData, salesDocIds, salesSyncedSnapshot);
                 filterCache.clear();
                 autoBackupSalesToLocalStorage();
                 return true;
