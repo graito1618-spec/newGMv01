@@ -2713,9 +2713,8 @@
             background: #fde68a;
         }
 
-    <!-- ===== CSS untuk tab Rapikan Data (versi baru, di-scope dengan .rap-scope) ===== -->
-    <style>
         .rap-scope {
+
             --rap-ink: #1a1a1a;
             --rap-blue: #1f4e9c;
             --rap-blue-light: #2f6fd1;
@@ -2767,7 +2766,7 @@
             gap: 14px;
             flex-wrap: wrap;
         }
-        .rap-scope .file-btn {
+.rap-scope .file-btn {
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -2778,7 +2777,7 @@
             cursor: pointer;
             font-size: 13.5px;
             font-weight: 700;
-            color: #ffffff;
+            color: #000000;
         }
         .rap-scope .file-btn:hover { background: var(--rap-blue-light); border-color: var(--rap-blue-light); color: #ffffff; }
         .rap-scope input[type="file"] { display: none; }
@@ -2787,7 +2786,7 @@
             color: #666;
             font-style: italic;
         }
-        .rap-scope .btn-proses {
+.rap-scope .btn-proses {
             background: var(--rap-red);
             color: #fff;
             border: none;
@@ -3802,7 +3801,7 @@
 
   <div class="upload-row">
     <div class="upload-left">
-      <label class="file-btn" for="rapFileInput">Upload Data Penjualan Mentah</label>
+<label class="file-btn" for="rapFileInput" style="color:#9c5b08;">Upload Data Penjualan Mentah</label>
       <input type="file" id="rapFileInput" accept=".xls,.xlsx">
       <span class="file-name" id="rapFileName">Belum ada file dipilih</span>
     </div>
@@ -3842,7 +3841,7 @@
 
   <div class="upload-row">
     <div class="upload-left">
-      <label class="file-btn" for="rapFileInputHB">Upload Data Harga Beli Mentah</label>
+<label class="file-btn" for="rapFileInputHB" style="color:#9c5b08;">Upload Data Harga Beli Mentah</label>
       <input type="file" id="rapFileInputHB" accept=".xls,.xlsx">
       <span class="file-name" id="rapFileNameHB">Belum ada file dipilih</span>
     </div>
