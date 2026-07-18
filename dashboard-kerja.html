@@ -2836,6 +2836,7 @@
             <div class="field"><label>Pembayaran</label><select id="fPembayaranSales"><option value="">Semua</option><option value="Cash">Cash</option><option value="Tempo">Tempo</option></select></div>
             <div class="field" style="justify-content:flex-end;"><label>&nbsp;</label><button class="btn btn-reset" id="btnResetSales">↺ Reset</button></div>
             <span class="info-right" id="salesRangeLabel" style="display:none;">Belum ada data</span>
+            <span class="info-right" id="firestoreSyncStatus" style="display:none;font-weight:700;"></span>
             <div class="action-inline" style="position: relative;">
                 <button class="menu-toggle-btn" id="salesMenuBtn">⚙️ Menu <span style="font-size:8px;">▼</span></button>
                 <div class="menu-dropdown" id="salesMenuDropdown">
@@ -3773,6 +3774,33 @@
     </div>
 
     <div class="toast success" id="toastGlobal">🔄 Data dimuat.</div>
+
+    <!-- ======= FIREBASE: penyimpanan pusat (real-time) untuk Tab 1 - Bank Data Penjualan ======= -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyARRCFuSvo4YIiVwAE9xJN7pDcucT_Qjx4",
+            authDomain: "gajahmas2026.firebaseapp.com",
+            projectId: "gajahmas2026",
+            storageBucket: "gajahmas2026.firebasestorage.app",
+            messagingSenderId: "688940774016",
+            appId: "1:688940774016:web:e50de185ff33320bb96c65",
+            measurementId: "G-0RRX8J5GEY"
+        };
+        let firestoreDb = null;
+        let firestoreEnabled = false;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            firestoreDb = firebase.firestore();
+            firestoreEnabled = true;
+        } catch (e) {
+            console.warn('Firebase gagal diinisialisasi, memakai penyimpanan lokal saja:', e);
+        }
+        // Satu dokumen berisi seluruh baris data penjualan (Tab 1), disinkronkan real-time
+        // ke semua perangkat yang membuka dashboard ini.
+        const FIRESTORE_SALES_DOC = 'appdata/sales';
+    </script>
 
     <script>
         // ================================================================
@@ -4925,9 +4953,51 @@
             renderFakturModalTab1(); });
 
         // ================================================================
-        // FUNGSI SALES (Tab 1)
+        // FUNGSI SALES (Tab 1) — kini tersinkron ke Firestore (Firebase)
+        // supaya semua perangkat yang membuka dashboard melihat data yang
+        // sama secara real-time. IndexedDB & localStorage tetap dipakai
+        // sebagai cadangan lokal (kalau internet/Firestore bermasalah).
         // ================================================================
+        let _salesRealtimeUnsub = null;
+        let _salesSavingToFirestore = false; // supaya listener tidak dobel-render pas kita sendiri yang nulis
+
+        function updateFirestoreSyncStatus(state) {
+            const el = document.getElementById('firestoreSyncStatus');
+            if (!el) return;
+            el.style.display = 'inline';
+            if (state === 'online') { el.textContent = '🟢 Tersambung ke server pusat'; el.style.color = '#1e7a46'; }
+            else if (state === 'offline') { el.textContent = '🔴 Offline — pakai data lokal'; el.style.color = '#9b2c2c'; }
+            else { el.style.display = 'none'; }
+        }
+
         async function loadSalesData() {
+            if (firestoreEnabled) {
+                try {
+                    const snap = await firestoreDb.doc(FIRESTORE_SALES_DOC).get();
+                    if (snap.exists) {
+                        const rows = snap.data().rows || [];
+                        salesData = rows;
+                        autoBackupSalesToLocalStorage();
+                        startSalesRealtimeListener();
+                        updateFirestoreSyncStatus('online');
+                        return;
+                    } else {
+                        // Dokumen belum ada di Firestore (pertama kali dipakai) —
+                        // coba pindahkan data lokal (kalau ada) supaya tidak hilang.
+                        const local = await db.sales.toArray();
+                        salesData = local.length ? local.map(({ id, ...rest }) => rest) : [];
+                        if (salesData.length) { await firestoreSaveSalesRows(salesData); }
+                        startSalesRealtimeListener();
+                        updateFirestoreSyncStatus('online');
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Gagal muat dari Firestore, memakai data lokal sebagai cadangan:', e);
+                    showToast('⚠️ Tidak bisa konek ke server pusat, memakai data cadangan lokal.', 'warning');
+                    updateFirestoreSyncStatus('offline');
+                }
+            }
+            // Fallback: IndexedDB lokal (dipakai kalau Firestore gagal/nonaktif)
             try {
                 const data = await db.sales.toArray();
                 if (data.length > 0) { salesData = data.map(({ id, ...rest }) => rest); } else { salesData = []; }
@@ -4935,8 +5005,48 @@
                 salesData = []; }
         }
 
+        // Menulis SELURUH array salesData sebagai satu dokumen Firestore (real-time ke semua perangkat)
+        async function firestoreSaveSalesRows(rows) {
+            if (!firestoreEnabled) return false;
+            try {
+                _salesSavingToFirestore = true;
+                await firestoreDb.doc(FIRESTORE_SALES_DOC).set({
+                    rows: rows,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                return true;
+            } catch (e) {
+                console.warn('Gagal simpan ke Firestore:', e);
+                return false;
+            } finally {
+                setTimeout(() => { _salesSavingToFirestore = false; }, 500);
+            }
+        }
+
+        // Mendengarkan perubahan real-time: kalau ada perangkat lain yang menyimpan data baru,
+        // tabel di sini otomatis ikut ter-update tanpa perlu refresh manual.
+        function startSalesRealtimeListener() {
+            if (!firestoreEnabled || _salesRealtimeUnsub) return;
+            _salesRealtimeUnsub = firestoreDb.doc(FIRESTORE_SALES_DOC).onSnapshot(snap => {
+                if (_salesSavingToFirestore) return; // ini hasil tulisan kita sendiri, sudah sesuai
+                if (!snap.exists) return;
+                salesData = snap.data().rows || [];
+                filterCache.clear();
+                autoBackupSalesToLocalStorage();
+                rebuildSalesFilterOptions();
+                salesCurrentDateIndex = Infinity;
+                renderSales();
+                showToast('🔄 Data penjualan diperbarui dari perangkat lain.', 'info');
+            }, err => { console.warn('Listener Firestore sales error:', err); updateFirestoreSyncStatus('offline'); });
+        }
+
         async function saveSalesData() {
             try {
+                filterCache.clear();
+                // Simpan ke Firestore dulu (sumber utama, real-time ke semua perangkat)
+                let firestoreOk = true;
+                if (firestoreEnabled) { firestoreOk = await firestoreSaveSalesRows(salesData); }
+                // Selalu cadangkan juga secara lokal (IndexedDB + localStorage)
                 await db.transaction('rw', db.sales, async () => {
                     await db.sales.clear();
                     const CHUNK = 500;
@@ -4944,8 +5054,10 @@
                         await db.sales.bulkAdd(salesData.slice(i, i + CHUNK));
                     }
                 });
-                filterCache.clear();
                 autoBackupSalesToLocalStorage();
+                if (firestoreEnabled && !firestoreOk) {
+                    showToast('⚠️ Tersimpan lokal, tapi gagal sinkron ke server pusat (cek internet).', 'warning');
+                }
                 return true;
             } catch (e) {
                 showToast('❌ Gagal simpan sales: ' + e.message, 'warning');
@@ -8808,6 +8920,8 @@
                     if (Array.isArray(sales)) {
                         await db.sales.clear();
                         if (sales.length) await db.sales.bulkAdd(sales);
+                        // Restore backup harus menang atas data yang sedang ada di server pusat (Firestore)
+                        if (firestoreEnabled) await firestoreSaveSalesRows(sales);
                     }
                     if (Array.isArray(cashIncome)) {
                         await db.cashIncome.clear();
