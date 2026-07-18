@@ -2967,16 +2967,17 @@
                 <thead>
                     <tr>
                         <th style="width:30px;"><input type="checkbox" id="cashSelectAll" title="Pilih Semua"></th>
+                        <th>Tanggal Transaksi</th>
                         <th>No.Faktur</th>
-                        <th>Tanggal</th>
-                        <th class="num">Nominal</th>
-                        <th>Sales</th>
                         <th>Customer</th>
                         <th>Alamat</th>
+                        <th>Sales</th>
+                        <th>Kategori</th>
+                        <th class="num">Nominal</th>
                         <th>Status</th>
                     </tr>
                 </thead>
-                <tbody id="cekCashSalesBody"><tr><td colspan="8" class="empty-msg">Tidak ada data cash.</td></tr></tbody>
+                <tbody id="cekCashSalesBody"><tr><td colspan="9" class="empty-msg">Tidak ada data cash.</td></tr></tbody>
             </table>
         </div>
         <div class="pagination" id="cashPager">
@@ -6472,14 +6473,17 @@
                     const badgeClass = d._status === 'cocok' ? 'cocok' : 'tidak';
                     const stempel = d._status === 'cocok' ? '<span class="stempel-lunas">Lunas</span>' :
                         `<span class="badge ${badgeClass}">${statusLabel}</span>`;
+                    const kategori = d.Kategori || '';
+                    const fakturLinkStyle = 'color:#1f4e78;font-weight:700;text-decoration:underline;';
                     return `<tr>
                         <td><input type="checkbox" class="cash-row-checkbox" data-faktur="${noFaktur}" ${cbChecked}></td>
-                        <td><span class="faktur-link" data-idx="${start+idx}" data-src="cekCash">${cashNotesMap[noFaktur] ? '📝 ' : ''}${noFaktur}</span></td>
                         <td>${fmtTanggal(d.Tanggal)}</td>
-                        <td class="num">${fmtRp(d.Total || 0)}</td>
-                        <td>${d.Sales || ''}</td>
+                        <td><span class="faktur-link" data-idx="${start+idx}" data-src="cekCash" style="${fakturLinkStyle}">${cashNotesMap[noFaktur] ? '📝 ' : ''}${noFaktur}</span></td>
                         <td>${d.Customer || ''}</td>
                         <td>${d.Alamat || ''}</td>
+                        <td>${d.Sales || ''}</td>
+                        <td>${kategori}</td>
+                        <td class="num">${fmtRp(d.Total || 0)}</td>
                         <td>${stempel}</td>
                     </tr>`;
                 }).join('');
@@ -6785,7 +6789,7 @@
                     return `<tr class="${r.statusClass==='overdue' ? 'pt-row-overdue' : ''}">
                                 <td><input type="checkbox" class="pt-row-checkbox" data-faktur="${r.noFaktur}" ${checked}></td>
                                 <td>${fmtTanggal(r.tanggal)}</td>
-                                <td><a href="#" class="pt-faktur-link" data-idx="${realIdx}" style="color:inherit; font-weight:600; text-decoration:none;">${piutangNotesMap[r.noFaktur] ? '📝 ' : ''}${r.noFaktur||''}</a></td>
+                                <td><a href="#" class="pt-faktur-link" data-idx="${realIdx}" style="color:#1f4e78; font-weight:700; text-decoration:underline;">${piutangNotesMap[r.noFaktur] ? '📝 ' : ''}${r.noFaktur||''}</a></td>
                                 <td>${r.customer||''}</td>
                                 <td>${r.alamat||''}</td>
                                 <td>${r.sales||''}</td>
