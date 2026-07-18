@@ -3523,7 +3523,6 @@
         <div class="filter-bar">
             <div class="field"><label>Cari Faktur</label><input type="text" id="fFakturRP" placeholder="No Faktur..."></div>
             <div class="field"><label>Bulan Uang Masuk</label><select id="fBulanRP"><option value="">Semua</option></select></div>
-            <div class="field"><label>Sales</label><select id="fSalesRP"><option value="">Semua</option></select></div>
             <div class="field"><label>Sumber Uang</label><select id="fSumberRP"><option value="">Semua</option><option value="Cash">Cash Dropping</option><option value="Tempo">Piutang Tempo</option></select></div>
             <div class="field" style="justify-content:flex-end;"><label>&nbsp;</label><button class="btn btn-reset" id="btnResetRP">↺ Reset</button></div>
             <div class="action-inline">
@@ -8934,10 +8933,8 @@
 
         function rpRebuildFilterOptions() {
             const bulanSet = new Set();
-            const salesSet = new Set();
             rpRawData.forEach(r => {
                 if (r.tglUangMasuk) bulanSet.add(r.tglUangMasuk.slice(0, 7));
-                if (r.sales) salesSet.add(r.sales.trim());
             });
             const bulanSel = document.getElementById('fBulanRP');
             const curBulan = bulanSel.value;
@@ -8946,23 +8943,15 @@
             if (curBulan && bulanSet.has(curBulan)) { bulanSel.value = curBulan; } else if (!userSetBulan.rp &&
                 APP_DEFAULT_BULAN && bulanSet.has(APP_DEFAULT_BULAN)) { bulanSel.value = APP_DEFAULT_BULAN; } else {
                 bulanSel.value = ''; }
-
-            const salesSel = document.getElementById('fSalesRP');
-            const curSales = salesSel.value;
-            salesSel.innerHTML = '<option value="">Semua</option>' + Array.from(salesSet).sort().map(s =>
-                `<option value="${s}">${s}</option>`).join('');
-            salesSel.value = (curSales && salesSet.has(curSales)) ? curSales : '';
         }
 
         function rpGetFiltered() {
             const faktur = document.getElementById('fFakturRP').value.trim().toLowerCase();
             const bulan = document.getElementById('fBulanRP').value;
-            const sales = document.getElementById('fSalesRP').value;
             const sumber = document.getElementById('fSumberRP').value;
             return rpRawData.filter(r => {
                 if (faktur && !r.noFaktur.toLowerCase().includes(faktur)) return false;
                 if (bulan && r.tglUangMasuk.slice(0, 7) !== bulan) return false;
-                if (sales && r.sales !== sales) return false;
                 if (sumber && r.sumber !== sumber) return false;
                 return true;
             });
@@ -9545,10 +9534,6 @@
             rpPage = 1;
             renderRekapProfit();
         });
-        document.getElementById('fSalesRP').addEventListener('change', function() {
-            rpPage = 1;
-            renderRekapProfit();
-        });
         document.getElementById('fSumberRP').addEventListener('change', function() {
             rpPage = 1;
             renderRekapProfit();
@@ -9556,7 +9541,6 @@
         document.getElementById('btnResetRP').addEventListener('click', function() {
             document.getElementById('fFakturRP').value = '';
             document.getElementById('fBulanRP').value = '';
-            document.getElementById('fSalesRP').value = '';
             document.getElementById('fSumberRP').value = '';
             userSetBulan.rp = true;
             rpPage = 1;
