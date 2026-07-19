@@ -3374,7 +3374,7 @@
             <div class="field"><label>Bulan</label><select id="ptBulan"><option value="">Semua</option></select></div>
             <div class="field"><label>Sales</label><select id="ptSales"><option value="">Semua</option></select></div>
             <div class="field"><label>Kategori</label><select id="ptKategori"><option value="">Semua</option><option value="fitri">Minyak Fitri</option><option value="rupa">Rupa Rupa</option></select></div>
-            <div class="field" style="min-width:170px;"><label>Status</label><select id="ptStatus"><option value="">Semua</option><option value="lunas">Sudah Lunas</option><option value="belum_gabungan">Belum Lunas (Semua)</option></select></div>
+            <div class="field" style="min-width:170px;"><label>Status</label><select id="ptStatus"><option value="">Semua</option><option value="lunas">Sudah Lunas</option><option value="belum_gabungan">Belum Lunas (Semua)</option><option value="titip">🟠 Titip</option></select></div>
             <div class="field" style="justify-content:flex-end;"><label>&nbsp;</label><button class="btn btn-reset" id="ptBtnReset">↺ Reset</button></div>
             <div class="field" style="justify-content:flex-end;"><label>&nbsp;</label><button class="btn btn-success" id="ptBtnSendToTab6">📤 Kirim ke Cetak Tagihan</button></div>
             <div class="action-inline">
@@ -6728,7 +6728,7 @@
 
         function ptLatestByFaktur(flatList) {
             const map = {};
-            flatList.forEach(d => { const key = String(d.noFaktur || '').trim().toLowerCase(); if (!key) return; if (!map[
+            flatList.forEach(d => { const key = normFaktur(d.noFaktur); if (!key) return; if (!map[
                     key] || (d._bulan >= map[key]._bulan)) map[key] = d; });
             return map;
         }
@@ -6753,8 +6753,17 @@
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const rows = [];
+            // PENTING: satu No.Faktur bisa punya banyak baris produk (banyak baris di salesData).
+            // "Sudah Lunas" harus dicek terhadap TOTAL SELURUH FAKTUR (jumlah semua baris produknya),
+            // bukan cuma nilai satu baris produk saja — kalau tidak, bayar titip yang lebih besar dari
+            // satu baris produk (tapi masih kurang dari total faktur) bisa salah ditandai "Lunas".
+            const fakturTotalMap = {};
             salesData.filter(r => r.Pembayaran === 'Tempo').forEach(r => {
-                const key = String(r['No.Faktur'] || '').trim().toLowerCase();
+                const k = normFaktur(r['No.Faktur']);
+                fakturTotalMap[k] = (fakturTotalMap[k] || 0) + parseNumber(r.Total);
+            });
+            salesData.filter(r => r.Pembayaran === 'Tempo').forEach(r => {
+                const key = normFaktur(r['No.Faktur']);
                 const detail = piutangMap[key];
                 let cls, jt = '',
                     ketRaw = '',
@@ -6797,7 +6806,8 @@
                 }
                 let overdueDays = null;
                 const totalTagihan = parseNumber(r.Total);
-                const sudahLunasNominal = totalBayar != null && totalBayar >= totalTagihan - 0.5;
+                const totalTagihanFaktur = fakturTotalMap[key] != null ? fakturTotalMap[key] : totalTagihan;
+                const sudahLunasNominal = totalBayar != null && totalBayar >= totalTagihanFaktur - 0.5;
                 if (sudahLunasNominal) cls = 'lunas';
                 if (cls !== 'lunas' && jt) {
                     const jtDate = ptParseDMY(jt);
@@ -6865,6 +6875,8 @@
                     if (kategori && r.kategori !== kategori) return false;
                     if (status === 'belum_gabungan') { 
                         if (r.statusClass === 'lunas') return false; 
+                    } else if (status === 'titip') {
+                        if (!(r.ketRaw || '').toLowerCase().includes('titip')) return false;
                     } else if (status && r.statusClass !== status) return false;
                     return true;
                 }
@@ -6876,6 +6888,8 @@
                 if (kategori && r.kategori !== kategori) return false;
                 if (status === 'belum_gabungan') { 
                     if (r.statusClass === 'lunas') return false; 
+                } else if (status === 'titip') {
+                    if (!(r.ketRaw || '').toLowerCase().includes('titip')) return false;
                 } else if (status && r.statusClass !== status) return false;
                 return true;
             });
@@ -9462,12 +9476,17 @@
 
         async function rpBangunData() {
             const rows = [];
-            let semuaBulan = [];
-            try { semuaBulan = await db.cashIncome.toArray(); } catch (e) { semuaBulan = []; }
-            semuaBulan.forEach(rec => {
-                const tahun = (rec.bulan || '').slice(0, 4) || String(new Date().getFullYear());
-                const bulanFallback = (rec.bulan || '').slice(5, 7) || '01';
-                (rec.data || []).forEach(day => {
+            // PENTING: pakai cashDataMap yang sudah dimuat & sudah disinkron di memori
+            // (sama persis dengan yang dipakai tab Data Uang Masuk), BUKAN fetch ulang
+            // langsung dari Firestore. Fetch ulang terpisah rawan race condition:
+            // kalau proses pencocokan piutang (ptRefresh) belum selesai menyimpan ke
+            // server saat fungsi ini jalan, Rekap Profit bisa dapat data lama/sebagian
+            // (tanggal yang baru saja dicocokkan jadi "hilang" dari Rekap Profit,
+            // padahal sudah muncul benar di tab Data Uang Masuk).
+            Object.keys(cashDataMap).forEach(bulan => {
+                const tahun = (bulan || '').slice(0, 4) || String(new Date().getFullYear());
+                const bulanFallback = (bulan || '').slice(5, 7) || '01';
+                (cashDataMap[bulan] || []).forEach(day => {
                     const parts = String(day.tanggal || '').split('-');
                     const dd = (parts[0] || '01').padStart(2, '0');
                     const mm = (parts[1] || bulanFallback).padStart(2, '0');
