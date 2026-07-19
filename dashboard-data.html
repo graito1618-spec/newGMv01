@@ -2719,13 +2719,13 @@
         .rap-scope {
 
             --rap-ink: #1a1a1a;
-            --rap-blue: #1f4e9c;
-            --rap-blue-light: #2f6fd1;
-            --rap-gray-header: #d9d9d9;
-            --rap-gray-line: #bfbfbf;
-            --rap-row-alt: #f5f6f7;
-            --rap-green: #1e7d3c;
-            --rap-red: #c0392b;
+            --rap-blue: #d97706;
+            --rap-blue-light: #b45309;
+            --rap-gray-header: #e2e8f0;
+            --rap-gray-line: #d0d7de;
+            --rap-row-alt: #f1f3f6;
+            --rap-green: #1e7a46;
+            --rap-red: #dc2626;
             --rap-paper: #ffffff;
             background: var(--rap-paper);
             color: var(--rap-ink);
@@ -2750,7 +2750,7 @@
             font-size: 13px;
             font-weight: 700;
             text-transform: uppercase;
-            margin: 0 0 12px 0;
+            margin: 6px 0 8px 0;
             color: var(--rap-ink);
         }
         .rap-scope .upload-row {
@@ -2758,8 +2758,8 @@
             align-items: center;
             justify-content: flex-start;
             gap: 16px;
-            margin-bottom: 34px;
-            padding-bottom: 22px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
             border-bottom: 1px solid #eee;
             flex-wrap: wrap;
         }
@@ -2772,17 +2772,17 @@
 .rap-scope .file-btn {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            background: var(--rap-blue);
-            border: 1px solid var(--rap-blue);
-            padding: 7px 14px;
+            gap: 6px;
+            background: #1d4ed8;
+            border: 1px solid #1d4ed8;
+            padding: 5px 11px;
             border-radius: 3px;
             cursor: pointer;
-            font-size: 13.5px;
-            font-weight: 700;
-            color: #000000;
+            font-size: 12px;
+            font-weight: 600;
+            color: #ffffff;
         }
-        .rap-scope .file-btn:hover { background: var(--rap-blue-light); border-color: var(--rap-blue-light); color: #ffffff; }
+        .rap-scope .file-btn:hover { background: #1e3a8a; border-color: #1e3a8a; color: #ffffff; }
         .rap-scope input[type="file"] { display: none; }
         .rap-scope .file-name {
             font-size: 12.5px;
@@ -2790,23 +2790,31 @@
             font-style: italic;
         }
 .rap-scope .btn-proses {
-            background: var(--rap-red);
+            background: #2563eb;
             color: #fff;
             border: none;
-            padding: 9px 26px;
+            padding: 5px 18px;
             border-radius: 3px;
-            font-weight: 700;
-            letter-spacing: .5px;
-            font-size: 13.5px;
+            font-weight: 600;
+            letter-spacing: .3px;
+            font-size: 12px;
             cursor: pointer;
+            animation: rapBtnProsesBlink 1.3s ease-in-out infinite;
         }
-        .rap-scope .btn-proses:hover { background: #d84a37; }
-        .rap-scope .btn-proses:disabled { background: var(--rap-blue); color: #ffffff; opacity: .55; cursor: not-allowed; }
+        .rap-scope .btn-proses:hover { background: #1d4ed8; }
+        .rap-scope .btn-proses:disabled { background: #94a3b8; color: #fff; opacity: .7; cursor: not-allowed; animation: none; }
+        @keyframes rapBtnProsesBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.55; }
+        }
 
         .rap-scope .status-msg {
             font-size: 12px;
-            margin-top: 8px;
-            min-height: 16px;
+            margin-top: 2px;
+            min-height: 0;
+        }
+        .rap-scope .status-msg:empty {
+            margin: 0;
         }
         .rap-scope .status-msg.ok { color: var(--rap-green); }
         .rap-scope .status-msg.err { color: var(--rap-red); }
@@ -2814,8 +2822,8 @@
         .rap-scope .filter-row {
             display: flex;
             align-items: center;
-            gap: 34px;
-            margin-bottom: 14px;
+            gap: 20px;
+            margin-bottom: 8px;
             flex-wrap: wrap;
         }
         .rap-scope .filter-item {
@@ -2871,7 +2879,7 @@
             text-overflow: ellipsis;
         }
         .rap-scope tbody tr:nth-child(even) { background: var(--rap-row-alt); }
-        .rap-scope tbody tr:hover { background: #eef3fc; }
+        .rap-scope tbody tr:hover { background: #e8ecf2; }
         .rap-scope td.num { text-align: right; font-variant-numeric: tabular-nums; }
         .rap-scope td.editable { color: var(--rap-blue); }
         .rap-scope td.editable select, .rap-scope td.editable input {
@@ -2907,20 +2915,20 @@
             background: var(--rap-blue);
             border: 1px solid var(--rap-blue);
             color: #ffffff;
-            padding: 13px 26px;
-            border-radius: 4px;
-            font-weight: 700;
-            font-size: 14px;
-            letter-spacing: .4px;
+            padding: 5px 14px;
+            border-radius: 3px;
+            font-weight: 600;
+            font-size: 12px;
+            letter-spacing: .3px;
             cursor: pointer;
-            box-shadow: 0 3px 8px rgba(0,0,0,.18);
+            box-shadow: 0 1px 3px rgba(0,0,0,.12);
             transition: transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease;
+            white-space: nowrap;
         }
         .rap-scope .btn-download:hover, .rap-scope .btn-kirim:hover {
             background: var(--rap-blue-light);
             border-color: var(--rap-blue-light);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 14px rgba(0,0,0,.24);
+            box-shadow: 0 3px 8px rgba(0,0,0,.18);
         }
         .rap-scope .btn-download:disabled, .rap-scope .btn-kirim:disabled {
             border-color: var(--rap-blue); color: #ffffff; cursor: not-allowed; background: var(--rap-blue);
@@ -2931,7 +2939,7 @@
             border-color: var(--rap-green);
             color: #ffffff;
         }
-        .rap-scope .btn-kirim:hover { background: #17612e; border-color: #17612e; transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,.24); }
+        .rap-scope .btn-kirim:hover { background: #145c33; border-color: #145c33; box-shadow: 0 3px 8px rgba(0,0,0,.18); }
         .rap-scope .btn-kirim:disabled { background: var(--rap-green); border-color: var(--rap-green); color: #ffffff; opacity: .55; box-shadow: none; transform: none; }
         .rap-scope .result-actions {
             display: flex;
@@ -2964,7 +2972,7 @@
         .rap-scope .hint-text {
             font-size: 12px;
             color: #666;
-            margin: 0 0 16px 0;
+            margin: 0 0 8px 0;
         }
 
         .rap-scope .reset-link {
@@ -3001,8 +3009,83 @@
 
         @media (max-width: 720px) {
             .rap-scope .upload-row { flex-direction: column; align-items: flex-start; }
+            .rap-scope .upload-row #rapDownloadBtn { margin-left: 0 !important; }
             .rap-scope .filter-row { flex-direction: column; align-items: flex-start; gap: 12px; }
             .rap-scope .summary { margin-left: 0; }
+        }
+        /* ===== ACCORDION STYLE untuk Rapikan Data ===== */
+        .accordion-section {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            background: #fff;
+        }
+        .accordion-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+        .accordion-header:hover {
+            background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+            border-bottom-color: #fdba74;
+        }
+        .accordion-header h2 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .accordion-toggle {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #64748b;
+            transition: transform 0.3s ease;
+        }
+        .accordion-section.active .accordion-toggle {
+            transform: rotate(180deg);
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .accordion-section.active .accordion-content {
+            max-height: 3000px;
+            border-bottom: none;
+        }
+        .accordion-body {
+            padding: 10px 16px;
+        }
+        /* Set default state - Rapikan Data Penjualan expanded, Harga Beli collapsed */
+        #rapPenjualanSection.accordion-section {
+            border-top: 2px solid #2d3748;
+        }
+        #rapPenjualanSection .accordion-header {
+            background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
+            border-bottom-color: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        #rapPenjualanSection .accordion-header h2,
+        #rapPenjualanSection .accordion-toggle {
+            color: #fff;
+        }
+        #rapPenjualanSection .accordion-header:hover {
+            background: linear-gradient(180deg, #3a4658 0%, #232b38 100%);
         }
     </style>
 </head>
@@ -3730,10 +3813,10 @@
                     <span style="font-size:10px; color:#b0c4de;" id="produkHargaCountLabel">0 produk</span>
                 </div>
                 <div class="tab8-card-body">
-                    <div class="no-print" style="font-size:10px;color:#6b7280;margin-bottom:6px;">
+                    <div class="no-print" style="font-size:10px;color:#6b7280;margin-bottom:12px;">
                         Kelola daftar master produk beserta harga beli &amp; harga jualnya di sini. Data disimpan di perangkat ini (seperti draft Input Harian).
                     </div>
-                    <button class="btn btn-success" id="btnBukaProdukHarga" style="font-size:12px;padding:7px 20px;">
+                    <button class="btn btn-success" id="btnBukaProdukHarga" style="font-size:13px;padding:10px 24px;">
                         <i class="bi bi-box-seam"></i> 📦 Buka Produk &amp; Harga
                     </button>
                 </div>
@@ -3800,68 +3883,81 @@
 <div class="rap-scope">
 <div class="wrap">
 
-  <h1 class="title">Rapikan Data Penjualan Mentah Disini</h1>
+<!-- Accordion Section 1: Rapikan Data Penjualan (Active/Expanded by default) -->
+<div class="accordion-section active" id="rapPenjualanSection">
+  <div class="accordion-header">
+    <h2><i class="bi bi-file-earmark-spreadsheet"></i> Rapikan Data Penjualan Mentah</h2>
+    <div class="accordion-toggle">⌄</div>
+  </div>
+  <div class="accordion-content">
+    <div class="accordion-body">
+      <div class="upload-row">
+        <div class="upload-left">
+          <label class="file-btn" for="rapFileInput">Upload Data Penjualan Mentah</label>
+          <input type="file" id="rapFileInput" accept=".xls,.xlsx">
+          <span class="file-name" id="rapFileName">Belum ada file dipilih</span>
+        </div>
+        <button class="btn-proses" id="rapProsesBtn" disabled>PROSES</button>
+        <button class="btn-kirim" id="rapKirimBtn" disabled>📤 Kirim ke Bank Data Penjualan</button>
+        <button class="btn-download" id="rapDownloadBtn" disabled style="margin-left:auto;">📥 Download Hasil Sesuai Filter</button>
+      </div>
+      <div class="status-msg" id="rapStatusMsg"></div>
 
-  <div class="upload-row">
-    <div class="upload-left">
-<label class="file-btn" for="rapFileInput" style="color:#9c5b08;">Upload Data Penjualan Mentah</label>
-      <input type="file" id="rapFileInput" accept=".xls,.xlsx">
-      <span class="file-name" id="rapFileName">Belum ada file dipilih</span>
+      <p class="section-label">Cek Hasil</p>
+
+      <div class="filter-row">
+        <div class="filter-item">
+          <label for="rapFilterTanggal">(filter tanggal)</label>
+          <select id="rapFilterTanggal"><option value="">Semua tanggal</option></select>
+        </div>
+        <div class="filter-item">
+          <label for="rapFilterBulan">(filter bulan)</label>
+          <select id="rapFilterBulan"><option value="">Semua bulan</option></select>
+        </div>
+        <div class="summary" id="rapSummaryText"></div>
+      </div>
+
+      <div id="rapTableArea">
+        <div class="empty-state">Belum ada data. Upload file lalu klik PROSES.</div>
+      </div>
+
+      <div class="kirim-info" id="rapKirimInfo"></div>
+      <div class="status-msg" id="rapKirimStatus"></div>
     </div>
-    <button class="btn-proses" id="rapProsesBtn" disabled>PROSES</button>
   </div>
-  <div class="status-msg" id="rapStatusMsg"></div>
+</div>
 
-  <p class="section-label">Cek Hasil</p>
+<!-- Accordion Section 2: Rapikan Data Harga Beli (Collapsed by default) -->
+<div class="accordion-section active" id="rapHargaBeliSection">
+  <div class="accordion-header">
+    <h2><i class="bi bi-tag-fill"></i> Rapikan Data Harga Beli</h2>
+    <div class="accordion-toggle">⌄</div>
+  </div>
+  <div class="accordion-content">
+    <div class="accordion-body">
+      <p class="hint-text">Upload sekali untuk memuat semua produk. Setelah itu, kalau cuma ada perubahan harga, cukup klik <b>Edit</b> pada produk yang berubah lalu <b>Save</b> — tidak perlu upload ulang. Data tersimpan otomatis di browser ini.</p>
 
-  <div class="filter-row">
-    <div class="filter-item">
-      <label for="rapFilterTanggal">(filter tanggal)</label>
-      <select id="rapFilterTanggal"><option value="">Semua tanggal</option></select>
+      <div class="upload-row">
+        <div class="upload-left">
+          <label class="file-btn" for="rapFileInputHB">Upload Data Harga Beli Mentah</label>
+          <input type="file" id="rapFileInputHB" accept=".xls,.xlsx">
+          <span class="file-name" id="rapFileNameHB">Belum ada file dipilih</span>
+        </div>
+        <button class="btn-proses" id="rapProsesBtnHB" disabled>PROSES</button>
+        <button class="btn-download" id="rapApplyHBBtn" style="margin-left:auto;" disabled>Masukkan ke Tabel Data Penjualan</button>
+      </div>
+      <div class="status-msg" id="rapStatusMsgHB"></div>
+      <div class="status-msg" id="rapApplyStatusMsg"></div>
+
+      <p class="section-label">Cek Hasil</p>
+
+      <div id="rapHbTableArea">
+        <div class="empty-state">Belum ada data. Upload file daftar harga lalu klik PROSES.</div>
+      </div>
+      <button class="reset-link" id="rapResetHBBtn" style="display:none;">Hapus semua data harga beli tersimpan di browser ini</button>
     </div>
-    <div class="filter-item">
-      <label for="rapFilterBulan">(filter bulan)</label>
-      <select id="rapFilterBulan"><option value="">Semua bulan</option></select>
-    </div>
-    <div class="summary" id="rapSummaryText"></div>
   </div>
-
-  <div id="rapTableArea">
-    <div class="empty-state">Belum ada data. Upload file lalu klik PROSES.</div>
-  </div>
-
-  <div class="result-actions">
-    <button class="btn-download" id="rapDownloadBtn" disabled>📥 Download Hasil Sesuai Filter</button>
-    <button class="btn-kirim" id="rapKirimBtn" disabled>📤 Kirim ke Bank Data Penjualan</button>
-  </div>
-  <div class="kirim-info" id="rapKirimInfo"></div>
-  <div class="status-msg" id="rapKirimStatus"></div>
-
-  <div class="section-divider"></div>
-
-  <h1 class="title">Rapikan Data Harga Beli</h1>
-  <p class="hint-text">Upload sekali untuk memuat semua produk. Setelah itu, kalau cuma ada perubahan harga, cukup klik <b>Edit</b> pada produk yang berubah lalu <b>Save</b> — tidak perlu upload ulang. Data tersimpan otomatis di browser ini.</p>
-
-  <div class="upload-row">
-    <div class="upload-left">
-<label class="file-btn" for="rapFileInputHB" style="color:#9c5b08;">Upload Data Harga Beli Mentah</label>
-      <input type="file" id="rapFileInputHB" accept=".xls,.xlsx">
-      <span class="file-name" id="rapFileNameHB">Belum ada file dipilih</span>
-    </div>
-    <button class="btn-proses" id="rapProsesBtnHB" disabled>PROSES</button>
-  </div>
-  <div class="status-msg" id="rapStatusMsgHB"></div>
-
-  <div class="filter-row">
-    <p class="section-label" style="margin:0;">Cek Hasil</p>
-    <button class="btn-download" id="rapApplyHBBtn" style="margin-left:auto;" disabled>Masukkan ke Tabel Data Penjualan</button>
-  </div>
-  <div class="status-msg" id="rapApplyStatusMsg"></div>
-
-  <div id="rapHbTableArea">
-    <div class="empty-state">Belum ada data. Upload file daftar harga lalu klik PROSES.</div>
-  </div>
-  <button class="reset-link" id="rapResetHBBtn" style="display:none;">Hapus semua data harga beli tersimpan di browser ini</button>
+</div>
 
 </div>
 </div>
@@ -4452,6 +4548,14 @@
             });
 
             console.log('📊 Rapikan Data (versi baru, praktis) siap.');
+
+            // ===== Accordion Toggle Logic =====
+            document.querySelectorAll('.accordion-header').forEach(header => {
+                header.addEventListener('click', function() {
+                    const section = this.closest('.accordion-section');
+                    section.classList.toggle('active');
+                });
+            });
         })();
     </script>
 </div>
@@ -10698,9 +10802,11 @@
             }
         }
 
+        let userHasSwitchedTab = false;
         document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn) {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
+                userHasSwitchedTab = true;
                 const tabName = this.getAttribute('data-tab');
                 if (tabName === 'tab9') {
                     bukaRekapProfitDenganPin(tabName);
@@ -10813,7 +10919,9 @@
 
                 initInputHarian();
 
-                switchTab('tab8');
+                if (!userHasSwitchedTab) {
+                    switchTab('tab8');
+                }
                 scheduleFitTableWraps();
 
                 console.log('✅ GAJAH MAS 2026 FINAL — Semua tab berfungsi.');

@@ -159,25 +159,26 @@
         }
         .tabs {
             display: flex;
-            gap: 2px;
-            background: #e5e7eb;
-            padding: 0 12px;
-            border-bottom: 2px solid #cbd5e1;
+            gap: 6px;
+            background: #fff;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e2e8f0;
             position: sticky;
             top: 36px;
             z-index: 39;
             flex-wrap: wrap;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
         }
         .tab-btn {
-            padding: 6px 14px;
-            border: none;
-            background: transparent;
+            padding: 7px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            background: #f8fafc;
             font-size: 11px;
             font-weight: 700;
             color: #64748b;
             cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all 0.15s;
+            transition: all 0.18s ease;
             white-space: nowrap;
             display: inline-flex;
             align-items: center;
@@ -201,6 +202,8 @@
         .tab-btn.active .tab-icon {
             opacity: 1;
         }
+        /* Semua tab aktif memakai gradient ungu-biru yang sama seperti header tabel,
+           supaya tampilan tab & tabel senada. */
         .tab-btn[data-tab="tab1"].active,
         .tab-btn[data-tab="tab2"].active,
         .tab-btn[data-tab="tab3"].active,
@@ -210,8 +213,10 @@
         .tab-btn[data-tab="tab8"].active,
         .tab-btn[data-tab="tab9"].active,
         .tab-btn[data-tab="tab10"].active {
-            color: #1d4ed8;
-            border-bottom-color: #1d4ed8;
+            color: #fff;
+            border-color: transparent;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.35);
         }
         .tab-btn[data-tab="tab1"].active .tab-icon,
         .tab-btn[data-tab="tab2"].active .tab-icon,
@@ -222,7 +227,7 @@
         .tab-btn[data-tab="tab8"].active .tab-icon,
         .tab-btn[data-tab="tab9"].active .tab-icon,
         .tab-btn[data-tab="tab10"].active .tab-icon {
-            color: #1d4ed8;
+            color: #fff;
         }
         .tab-btn[data-tab="tab1"].active .badge-tab,
         .tab-btn[data-tab="tab2"].active .badge-tab,
@@ -233,27 +238,229 @@
         .tab-btn[data-tab="tab8"].active .badge-tab,
         .tab-btn[data-tab="tab9"].active .badge-tab,
         .tab-btn[data-tab="tab10"].active .badge-tab {
-            background: #1d4ed8;
+            background: rgba(255, 255, 255, 0.28);
+            color: #fff;
         }
         .tab-btn:hover {
-            color: #1e293b;
-            background: rgba(0, 0, 0, 0.03);
+            color: #4c51bf;
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            transform: translateY(-1px);
         }
-        .tab-btn.active {
-            color: #1e293b;
-            border-bottom-color: #2d3748;
-            background: #fff;
+        .tab-btn.active:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(102, 126, 234, 0.45);
         }
         .tab-btn .badge-tab {
-            background: #94a3b8;
-            color: #fff;
+            background: #cbd5e1;
+            color: #334155;
             border-radius: 20px;
-            padding: 0 8px;
+            padding: 1px 7px;
             font-size: 9px;
-            margin-left: 4px;
+            font-weight: 700;
+            margin-left: 2px;
+            min-width: 15px;
+            text-align: center;
+            display: inline-block;
         }
-        .tab-btn.active .badge-tab {
-            background: #2d3748;
+
+        /* ===== FLOATING SELECTION TOOLBAR (muncul otomatis saat ada centang) ===== */
+        .selection-toolbar {
+            display: none;
+            position: fixed;
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%) translateY(16px);
+            z-index: 500;
+            align-items: center;
+            gap: 14px;
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            color: #fff;
+            padding: 10px 14px 10px 18px;
+            border-radius: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            max-width: calc(100vw - 24px);
+        }
+        .selection-toolbar.show {
+            display: flex;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .selection-toolbar .sel-info {
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .selection-toolbar .sel-info .sel-count {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 2px 9px;
+            font-size: 11px;
+        }
+        .selection-toolbar .btn-sel-cancel {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #cbd5e1;
+            padding: 7px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .selection-toolbar .btn-sel-cancel:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+        .selection-toolbar .btn-sel-trash {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            box-shadow: 0 3px 10px rgba(217, 119, 6, 0.4);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .selection-toolbar .btn-sel-trash:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+        .selection-toolbar .btn-sel-send {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            box-shadow: 0 3px 10px rgba(22, 163, 74, 0.4);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .selection-toolbar .btn-sel-send:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+
+        /* ===== MODAL KONFIRMASI CUSTOM (pengganti confirm()/prompt() bawaan) ===== */
+        .confirm-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9990;
+            background: rgba(15, 23, 42, 0.55);
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            backdrop-filter: blur(1px);
+        }
+        .confirm-modal-overlay.show {
+            display: flex;
+        }
+        .confirm-modal-box {
+            background: #fff;
+            width: 100%;
+            max-width: 360px;
+            border-radius: 16px;
+            padding: 22px 22px 18px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+            text-align: center;
+            animation: confirmPop 0.16s ease;
+        }
+        @keyframes confirmPop {
+            from { transform: scale(0.94); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .confirm-modal-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #fff;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            box-shadow: 0 6px 16px rgba(217, 119, 6, 0.35);
+        }
+        .confirm-modal-box h3 {
+            font-size: 15px;
+            color: #1e293b;
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+        .confirm-modal-box p {
+            font-size: 11.5px;
+            color: #64748b;
+            line-height: 1.5;
+            margin-bottom: 14px;
+        }
+        .confirm-modal-reason {
+            text-align: left;
+            margin-bottom: 16px;
+        }
+        .confirm-modal-reason label {
+            display: block;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+        .confirm-modal-reason input {
+            width: 100%;
+            padding: 9px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+        .confirm-modal-reason input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        }
+        .confirm-modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .confirm-modal-actions button {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+        }
+        .confirm-modal-btn-cancel {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        .confirm-modal-btn-cancel:hover {
+            background: #e2e8f0;
+        }
+        .confirm-modal-btn-ok {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);
+        }
+        .confirm-modal-btn-ok:hover {
+            filter: brightness(1.06);
         }
 
         .tab-content {
@@ -367,169 +574,203 @@
             font-style: italic;
         }
         .btn {
-            padding: 3px 12px;
+            padding: 6px 14px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             font-size: 10px;
-            transition: background 0.15s, box-shadow 0.15s;
-            background: #64748b;
+            transition: all 0.2s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
-            box-shadow: var(--shadow);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
             white-space: nowrap;
             height: 28px;
             display: inline-flex;
             align-items: center;
-            gap: 3px;
+            gap: 4px;
             line-height: 1;
         }
         .btn:hover {
-            background: #475569;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
         }
         .btn-reset {
-            background: #6b7280;
+            background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+            box-shadow: 0 2px 8px rgba(148, 163, 184, 0.2);
         }
         .btn-reset:hover {
-            background: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(148, 163, 184, 0.3);
         }
         .btn-danger {
-            background: #dc2626;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
         }
         .btn-danger:hover {
-            background: #b91c1c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
         }
         .btn-outline {
-            background: #fff;
-            color: #1e293b;
-            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #667eea;
+            border: 2px solid #667eea;
+            box-shadow: none;
         }
         .btn-outline:hover {
-            background: #f1f3f6;
+            background: #f0f4ff;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
         }
         .btn-orange {
-            background: #d97706;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: #fff;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
         }
         .btn-orange:hover {
-            background: #b45309;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
         }
         .btn-success {
-            background: #1e7a46;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: #fff;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
         }
         .btn-success:hover {
-            background: #145c33;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
         }
         .btn-purple {
-            background: #7c3aed;
+            background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
             color: #fff;
+            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
         }
         .btn-purple:hover {
-            background: #6d28d9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
         }
         .cards {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 10px;
+            gap: 12px;
+            margin-bottom: 16px;
         }
         .card {
             flex: 1 0 auto;
-            min-width: 100px;
-            background: #fff;
-            border-radius: var(--radius);
-            padding: 4px 12px;
-            border: 1px solid #d1d5db;
-            box-shadow: var(--shadow);
+            min-width: 140px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 12px 16px;
+            border: none;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
             display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 8px;
-            height: 36px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            height: auto;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
         }
         .card .label {
             font-size: 9px;
             font-weight: 700;
-            color: #6b7280;
+            color: rgba(255, 255, 255, 0.8);
             text-transform: uppercase;
             letter-spacing: 0.4px;
             white-space: nowrap;
         }
         .card .value {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 700;
-            color: #1e293b;
+            color: #ffffff;
             white-space: nowrap;
         }
         .card .value.green {
-            color: var(--green);
+            color: #10b981;
         }
         .card .value.orange {
-            color: var(--orange);
+            color: #f59e0b;
         }
         .card .value.red {
-            color: var(--red);
+            color: #ef4444;
         }
         .card .value.blue {
-            color: var(--blue);
+            color: #3b82f6;
         }
         .card .value.purple {
-            color: #6d28d9;
+            color: #a78bfa;
         }
         .filter-bar {
             display: flex;
             flex-wrap: nowrap;
             align-items: flex-end;
             gap: 6px 10px;
-            padding: 6px 12px;
-            background: #fff;
-            border: 1px solid #d1d5db;
-            border-radius: var(--radius);
-            margin-bottom: 8px;
-            box-shadow: var(--shadow);
+            padding: 12px 16px;
+            background: linear-gradient(to right, #f8fafc, #f0f4ff);
+            border: 1px solid #e8ecf4;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
             overflow-x: auto;
+        }
+        .filter-bar,
+        #tab3 .cash-filter-bar,
+        #tab8 .trash-filter-bar {
+            position: sticky;
+            top: var(--sticky-filter-top, 84px);
+            z-index: 20;
         }
         .filter-bar .field {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 4px;
             flex: 0 0 auto;
             min-width: 60px;
         }
         .filter-bar .field label {
             font-size: 7px;
             font-weight: 700;
-            color: #4a5568;
+            color: #667eea;
             text-transform: uppercase;
-            letter-spacing: 0.2px;
+            letter-spacing: 0.3px;
         }
         .filter-bar .field input,
         .filter-bar .field select {
-            padding: 2px 4px;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
+            padding: 6px 8px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 6px;
             font-size: 9px;
             font-family: inherit;
-            background: #fff;
-            height: 24px;
+            background: #ffffff;
+            height: 28px;
             min-width: 70px;
             width: 100%;
+            transition: all 0.2s ease;
+        }
+        .filter-bar .field input:hover,
+        .filter-bar .field select:hover {
+            border-color: #667eea;
         }
         .filter-bar .field input:focus,
         .filter-bar .field select:focus {
-            outline: 2px solid #b0b8c5;
-            border-color: transparent;
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: #f0f4ff;
         }
         .filter-bar .field .btn {
-            height: 24px;
-            padding: 0 8px;
+            height: 28px;
+            padding: 0 10px;
             font-size: 9px;
+            margin-top: 2px;
         }
         .filter-bar .info-right {
             font-size: 9px;
             font-weight: 600;
-            color: #475569;
+            color: #667eea;
             margin-left: auto;
             padding-left: 10px;
             border-left: 1px solid #e2e8f0;
@@ -564,42 +805,104 @@
         }
         .table-wrap table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             font-size: 0.65rem;
             min-width: 480px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
         .table-wrap th {
             position: sticky;
             top: 0;
-            background: #d1d7e0;
-            color: #1e293b;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
             text-align: left;
-            padding: 4px 8px;
+            padding: 12px 8px;
             font-size: 0.6rem;
             text-transform: uppercase;
-            letter-spacing: 0.2px;
-            border-right: 1px solid rgba(0, 0, 0, 0.04);
-            border-bottom: 2px solid #b0b8c5;
+            letter-spacing: 0.5px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
             white-space: nowrap;
             font-weight: 700;
             z-index: 5;
+            border: none;
         }
         .table-wrap td {
-            padding: 3px 8px;
-            border-bottom: 1px solid #e5e9ef;
+            padding: 10px 8px;
+            border-bottom: 1px solid #e8ecf4;
             white-space: nowrap;
             font-size: 0.65rem;
             background: #fafbfc;
+            transition: all 0.2s ease;
+        }
+        .table-wrap tbody tr {
+            transition: all 0.2s ease;
+        }
+        .table-wrap tbody tr:hover {
+            background: #f0f4ff;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
         }
         .table-wrap tbody tr:nth-child(even) td {
-            background: #f1f3f6;
+            background: #f8fafc;
         }
-        .table-wrap tbody tr:hover td {
-            background: #e8ecf2;
+        .table-wrap tbody tr:nth-child(even):hover td {
+            background: #f0f4ff;
         }
         .table-wrap td.num,
         .table-wrap th.num {
             text-align: right;
+        }
+        /* Expandable Row Styling */
+        .table-wrap .expand-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #667eea;
+            padding: 4px 8px;
+            transition: transform 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .table-wrap .expand-btn.open {
+            transform: rotate(90deg);
+        }
+        .table-wrap tr.detail-row {
+            display: none;
+        }
+        .table-wrap tr.detail-row.active {
+            display: table-row;
+        }
+        .table-wrap .detail-cell {
+            padding: 0;
+            background: linear-gradient(to right, #f8fafc, #f0f4ff);
+            border-bottom: 2px solid #e8ecf4;
+        }
+        .table-wrap .detail-content {
+            padding: 12px 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .table-wrap .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .table-wrap .detail-label {
+            font-size: 0.55rem;
+            font-weight: 700;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .table-wrap .detail-value {
+            font-size: 0.65rem;
+            color: #1e293b;
+            font-weight: 500;
         }
         /* Global: kolom angka selalu rata kanan di SEMUA tabel, termasuk tabel
            di dalam modal (mis. modal detail faktur) yang berada di luar .table-wrap.
@@ -609,6 +912,28 @@
         th.num {
             text-align: right;
         }
+        /* Responsive & Hidden Columns untuk Small Screens */
+        @media (max-width: 1200px) {
+            .table-wrap th:nth-child(n+5),
+            .table-wrap td:nth-child(n+5) {
+                display: none;
+            }
+        }
+        
+        /* Stempel Lunas Modern */
+        .stempel-lunas {
+            display: inline-block;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
         td.center,
         th.center {
             text-align: center;
@@ -673,10 +998,11 @@
         .pg-print-title h2 { font-size: 16px; margin-bottom: 2px; }
         .pg-print-title div { font-size: 12px; color: #4a5568; }
         @media print {
-            body * { visibility: hidden; }
-            #pgPrintArea, #pgPrintArea * { visibility: visible; }
-            #pgPrintArea { position: absolute; top: 0; left: 0; width: 100%; }
-            #pgPrintArea .pg-print-title { display: block !important; }
+            body.printing-pengeluaran * { visibility: hidden; }
+            body.printing-pengeluaran #pgPrintArea,
+            body.printing-pengeluaran #pgPrintArea * { visibility: visible; }
+            body.printing-pengeluaran #pgPrintArea { position: absolute; top: 0; left: 0; width: 100%; }
+            body.printing-pengeluaran #pgPrintArea .pg-print-title { display: block !important; }
             .pg-excel-wrap td.pg-col-aksi, .pg-excel-wrap th.pg-th-aksi { display: none !important; }
             .pg-excel-wrap .table-wrap, .table-wrap.pg-excel-wrap { border: none; box-shadow: none; overflow: visible; }
             .pg-excel-wrap table { font-size: 10px; }
@@ -693,44 +1019,51 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 4px 12px;
+            padding: 12px 16px;
             font-size: 10px;
             flex-wrap: wrap;
-            gap: 4px;
-            background: #fff;
-            border-radius: 0 0 var(--radius) var(--radius);
-            border: 1px solid #d1d5db;
+            gap: 8px;
+            background: linear-gradient(to right, #f8fafc, #f0f4ff);
+            border-radius: 0 0 12px 12px;
+            border: 1px solid #e8ecf4;
             border-top: none;
-            box-shadow: var(--shadow);
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
             margin-top: -1px;
         }
         .pagination button {
-            background: #64748b;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
             border: none;
-            padding: 2px 10px;
-            border-radius: 4px;
+            padding: 6px 12px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 9px;
-            transition: background 0.15s;
-            height: 24px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            height: 28px;
             line-height: 1;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.2);
         }
         .pagination button:hover {
-            background: #475569;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
         }
         .pagination button:disabled {
             opacity: 0.4;
             cursor: default;
-            background: #94a3b8;
+            background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+            transform: none;
         }
         .badge-count {
-            background: #e5e7eb;
-            padding: 1px 10px;
-            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
+            padding: 4px 12px;
+            border-radius: 20px;
             font-weight: 600;
             font-size: 9px;
-            color: #1e293b;
+            color: #667eea;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
         .two-col {
             display: grid;
@@ -783,50 +1116,68 @@
         }
         .badge {
             display: inline-block;
-            padding: 0 8px;
-            border-radius: 12px;
+            padding: 4px 10px;
+            border-radius: 20px;
             font-size: 8px;
             font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            transition: all 0.2s ease;
         }
         .badge.cocok {
-            background: #d4edda;
-            color: var(--good);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
         .badge.tidak {
-            background: #f8d7da;
-            color: var(--red);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(244, 63, 94, 0.1) 100%);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
         .badge.cash {
-            background: #d4edda;
-            color: var(--good);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
         .badge.tempo {
-            background: #fde8d8;
-            color: var(--warn);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 146, 60, 0.1) 100%);
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }
         .badge.pt-lunas {
-            background: #d4edda;
-            color: var(--good);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
         .badge.pt-belum {
-            background: #f8d7da;
-            color: var(--warn);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(244, 63, 94, 0.1) 100%);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
         .badge.pt-titip {
-            background: #fdf1e0;
-            color: #a5650f;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 146, 60, 0.1) 100%);
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }
         .badge.pt-tagih {
-            background: #f8d7da;
-            color: var(--warn);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(244, 63, 94, 0.1) 100%);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
         .badge.pt-overdue {
-            background: #fbdcdc;
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(185, 28, 28, 0.1) 100%);
             color: #b91c1c;
+            border: 1px solid rgba(220, 38, 38, 0.3);
         }
         .badge.pt-tercatat {
-            background: #e6eaf0;
-            color: #4a5568;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 100%);
+            color: #667eea;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+        .badge.pt-tercatat {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 100%);
+            color: #667eea;
+            border: 1px solid rgba(102, 126, 234, 0.3);
         }
         .pt-row-overdue td {
             background: #fff5f5;
@@ -880,7 +1231,7 @@
             z-index: 60;
             align-items: flex-start;
             justify-content: center;
-            padding: 16px 8px;
+            padding: 4px 8px;
             overflow-y: auto;
         }
         .modal-overlay.show {
@@ -889,9 +1240,9 @@
         .modal-box {
             background: #fff;
             border-radius: var(--radius);
-            max-width: 960px;
+            max-width: 1180px;
             width: 100%;
-            max-height: 90vh;
+            max-height: 98vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -1240,8 +1591,12 @@
 
         /* Print styling untuk tab6 dan tab7 */
         @page {
-            size: landscape;
             margin: 4mm 8mm 8mm 8mm;
+        }
+        @media print {
+            #storageStatusBar {
+                display: none !important;
+            }
         }
         @media print {
             html, body {
@@ -2646,46 +3001,57 @@
             margin-left: auto;
         }
         #tab3 .cash-table-wrap {
-            border: 1px solid #d1d5db;
-            border-radius: var(--radius);
+            border: none;
+            border-radius: 12px;
             background: #fff;
-            box-shadow: var(--shadow);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             overflow: auto;
         }
         #tab3 .cash-table-wrap table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             font-size: 0.65rem;
             min-width: 700px;
+            border-radius: 12px;
+            overflow: hidden;
         }
         #tab3 .cash-table-wrap th {
             position: sticky;
             top: 0;
-            background: #d1d7e0;
-            color: #1e293b;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
             text-align: left;
-            padding: 4px 8px;
+            padding: 12px 8px;
             font-size: 0.6rem;
             text-transform: uppercase;
-            letter-spacing: 0.2px;
-            border-right: 1px solid rgba(0,0,0,0.04);
-            border-bottom: 2px solid #b0b8c5;
+            letter-spacing: 0.5px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
             white-space: nowrap;
             font-weight: 700;
             z-index: 5;
+            border: none;
         }
         #tab3 .cash-table-wrap td {
-            padding: 3px 8px;
-            border-bottom: 1px solid #e5e9ef;
+            padding: 10px 8px;
+            border-bottom: 1px solid #e8ecf4;
             white-space: nowrap;
             font-size: 0.65rem;
             background: #fafbfc;
+            transition: all 0.2s ease;
         }
-        #tab3 .cash-table-wrap tbody tr:nth-child(even) td {
-            background: #f1f3f6;
+        #tab3 .cash-table-wrap tbody tr {
+            transition: all 0.2s ease;
         }
         #tab3 .cash-table-wrap tbody tr:hover td {
-            background: #e8ecf2;
+            background: #fff4f6;
+            box-shadow: 0 2px 8px rgba(245, 87, 108, 0.1);
+        }
+        #tab3 .cash-table-wrap tbody tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+        #tab3 .cash-table-wrap tbody tr:nth-child(even):hover td {
+            background: #fff4f6;
         }
         #tab3 .cash-table-wrap td.num {
             text-align: right;
@@ -2763,6 +3129,44 @@
     </style>
 </head>
 <body>
+    <!-- ===== Floating Selection Toolbar (Bank Data Penjualan) ===== -->
+    <div class="selection-toolbar" id="salesSelectionToolbar">
+        <div class="sel-info"><i class="bi bi-check2-square"></i> <span class="sel-count" id="salesToolbarCount">0</span> data dipilih</div>
+        <button class="btn-sel-cancel" id="btnSalesToolbarCancel">Batal</button>
+        <button class="btn-sel-trash" id="btnSalesToolbarTrash"><i class="bi bi-trash3"></i> Pindah ke Sampah</button>
+    </div>
+
+    <!-- ===== Floating Selection Toolbar (Cek Cash -> Cetak Tagihan) ===== -->
+    <div class="selection-toolbar" id="cashSelectionToolbar">
+        <div class="sel-info"><i class="bi bi-check2-square"></i> <span class="sel-count" id="cashToolbarCount">0</span> faktur dipilih</div>
+        <button class="btn-sel-cancel" id="btnCashToolbarCancel">Batal</button>
+        <button class="btn-sel-send" id="btnCashToolbarSend">📤 Kirim ke Cetak Tagihan</button>
+    </div>
+
+    <!-- ===== Floating Selection Toolbar (Cek Piutang -> Cetak Tagihan) ===== -->
+    <div class="selection-toolbar" id="ptSelectionToolbar">
+        <div class="sel-info"><i class="bi bi-check2-square"></i> <span class="sel-count" id="ptToolbarCount">0</span> faktur dipilih</div>
+        <button class="btn-sel-cancel" id="btnPtToolbarCancel">Batal</button>
+        <button class="btn-sel-send" id="btnPtToolbarSend">📤 Kirim ke Cetak Tagihan</button>
+    </div>
+
+    <!-- ===== Modal Konfirmasi Custom (pengganti confirm()/prompt() bawaan) ===== -->
+    <div class="confirm-modal-overlay" id="confirmModalOverlay">
+        <div class="confirm-modal-box">
+            <div class="confirm-modal-icon">🗑️</div>
+            <h3 id="confirmModalTitle">Serius Mau Dipindah Ke Tempat Sampah..?</h3>
+            <p id="confirmModalDesc">Data akan dipindahkan ke Data Sampah.</p>
+            <div class="confirm-modal-reason" id="confirmModalReasonWrap">
+                <label>Alasan pindahkan:</label>
+                <input type="text" id="confirmModalReasonInput" placeholder="Contoh: Salah Input, Batal, dll">
+            </div>
+            <div class="confirm-modal-actions">
+                <button class="confirm-modal-btn-cancel" id="confirmModalCancel">Batal</button>
+                <button class="confirm-modal-btn-ok" id="confirmModalOk">Ya, Pindahkan</button>
+            </div>
+        </div>
+    </div>
+
     <div class="pwa-float-nav">
         <a href="index.html" title="Kembali ke Hub">⬅️ Dashboard</a>
         <a href="dashboard-laporan.html" title="Buka Dashboard Laporan">📈 Laporan</a>
@@ -2954,7 +3358,6 @@
             <div class="field"><label>Kategori</label><select id="cekFilterKategori"><option value="">Semua</option><option value="Fitri">Fitri</option><option value="Rupa Rupa">Rupa Rupa</option></select></div>
             <div class="field" style="min-width:120px;"><label>Status</label><select id="cekFilterKet"><option value="">Semua</option><option value="cocok">Lunas</option><option value="tidak">Belum Lunas</option></select></div>
             <div class="field" style="justify-content:flex-end;"><label>&nbsp;</label><button class="btn btn-reset" id="cekBtnReset">↺ Reset</button></div>
-            <div class="field" style="justify-content:flex-end;"><label>&nbsp;</label><button class="btn btn-success" id="cekCashBtnSendToTab6">📤 Kirim ke Cetak Tagihan</button></div>
             <span class="info-right" id="cashInfoRight" style="display:none;">0 data</span>
             <div class="actions">
                 <span class="data-baru-notif" id="cashDataBaruNotif" style="display:none;" title="Klik Muat Ulang untuk memperbarui tabel">🆕 Data baru masuk</span>
@@ -3002,7 +3405,6 @@
             <div class="field"><label>Kategori</label><select id="ptKategori"><option value="">Semua</option><option value="fitri">Minyak Fitri</option><option value="rupa">Rupa Rupa</option></select></div>
             <div class="field" style="min-width:170px;"><label>Status</label><select id="ptStatus"><option value="">Semua</option><option value="lunas">Sudah Lunas</option><option value="belum_gabungan">Belum Lunas (Semua)</option></select></div>
             <div class="field" style="justify-content:flex-end;"><label>&nbsp;</label><button class="btn btn-reset" id="ptBtnReset">↺ Reset</button></div>
-            <div class="field" style="justify-content:flex-end;"><label>&nbsp;</label><button class="btn btn-success" id="ptBtnSendToTab6">📤 Kirim ke Cetak Tagihan</button></div>
             <div class="action-inline">
                 <span class="data-baru-notif" id="ptDataBaruNotif" style="display:none;" title="Klik Muat Ulang untuk memperbarui tabel">🆕 Data baru masuk</span>
                 <div style="position: relative;">
@@ -4522,6 +4924,27 @@
             badge.textContent = '🔴 Offline — data disimpan lokal, akan sinkron saat online lagi';
             badge.style.background = '#ffe3e3'; badge.style.color = '#c92a2a';
         });
+
+        // ================================================================
+        // STICKY FILTER BAR — filter tetap kelihatan di bawah header & tab
+        // saat halaman discroll ke bawah (tidak ikut naik/hilang lagi).
+        // ================================================================
+        function updateStickyFilterOffset() {
+            const header = document.querySelector('.app-header');
+            const tabs = document.querySelector('.tabs');
+            const headerVisible = header && getComputedStyle(header).display !== 'none';
+            const tabsVisible = tabs && getComputedStyle(tabs).display !== 'none';
+            const headerH = headerVisible ? header.offsetHeight : 0;
+            const tabsH = tabsVisible ? tabs.offsetHeight : 0;
+            document.documentElement.style.setProperty('--sticky-filter-top', (headerH + tabsH) + 'px');
+        }
+        window.addEventListener('load', updateStickyFilterOffset);
+        window.addEventListener('resize', updateStickyFilterOffset);
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStickyFilterOffset();
+            setTimeout(updateStickyFilterOffset, 300);
+        });
+
 
         async function migrateFromLocalStorage() {
             const count = await db.sales.count();
@@ -6215,17 +6638,31 @@
         // ================================================================
         function updateSalesSelectedInfo() {
             const countEl = document.getElementById('salesSelectedCount');
-            if (!countEl) return;
-            if (salesRowsSelected.size > 0) {
-                countEl.style.display = 'inline';
-                countEl.textContent = '(' + salesRowsSelected.size + ')';
-            } else {
-                countEl.style.display = 'none';
+            if (countEl) {
+                if (salesRowsSelected.size > 0) {
+                    countEl.style.display = 'inline';
+                    countEl.textContent = '(' + salesRowsSelected.size + ')';
+                } else {
+                    countEl.style.display = 'none';
+                }
             }
             const allCbs = document.querySelectorAll('.sales-trash-checkbox');
             const checkedCbs = document.querySelectorAll('.sales-trash-checkbox:checked');
             const selectAll = document.getElementById('salesSelectAll');
             if (selectAll) selectAll.checked = (allCbs.length > 0 && checkedCbs.length === allCbs.length);
+
+            // Floating toolbar: muncul otomatis begitu ada baris yang dicentang,
+            // jadi tidak perlu cari-cari tombol lagi di ujung tabel.
+            const toolbar = document.getElementById('salesSelectionToolbar');
+            const toolbarCount = document.getElementById('salesToolbarCount');
+            if (toolbar) {
+                if (salesRowsSelected.size > 0) {
+                    if (toolbarCount) toolbarCount.textContent = salesRowsSelected.size;
+                    toolbar.classList.add('show');
+                } else {
+                    toolbar.classList.remove('show');
+                }
+            }
         }
 
         document.getElementById('salesTableBody').addEventListener('change', function(e) {
@@ -6246,19 +6683,74 @@
             updateSalesSelectedInfo();
         });
 
-        document.getElementById('btnTrashSales').addEventListener('click', async function() {
+        // ----------------------------------------------------------------
+        // Modal konfirmasi custom (pengganti confirm()/prompt() bawaan browser).
+        // Dipakai untuk konfirmasi "Serius Mau Dipindah Ke Tempat Sampah..?"
+        // Bisa dipakai ulang untuk fitur lain yang butuh konfirmasi + input alasan.
+        // ----------------------------------------------------------------
+        function showTrashConfirmModal(jumlahTerpilih, onConfirm) {
+            const overlay = document.getElementById('confirmModalOverlay');
+            const titleEl = document.getElementById('confirmModalTitle');
+            const descEl = document.getElementById('confirmModalDesc');
+            const reasonInput = document.getElementById('confirmModalReasonInput');
+            const okBtn = document.getElementById('confirmModalOk');
+            const cancelBtn = document.getElementById('confirmModalCancel');
+
+            titleEl.textContent = 'Serius Mau Dipindah Ke Tempat Sampah..?';
+            descEl.textContent = jumlahTerpilih > 1
+                ? jumlahTerpilih + ' data yang dicentang akan dipindahkan ke Data Sampah. Data masih bisa dipulihkan lagi dari tab Trash & Save.'
+                : '1 data yang dicentang akan dipindahkan ke Data Sampah. Data masih bisa dipulihkan lagi dari tab Trash & Save.';
+            reasonInput.value = 'Salah Input';
+
+            overlay.classList.add('show');
+            setTimeout(() => reasonInput.focus(), 50);
+
+            function cleanup() {
+                overlay.classList.remove('show');
+                okBtn.removeEventListener('click', onOk);
+                cancelBtn.removeEventListener('click', onCancel);
+                overlay.removeEventListener('click', onOverlayClick);
+            }
+            function onOk() {
+                const alasan = reasonInput.value.trim() || '-';
+                cleanup();
+                onConfirm(alasan);
+            }
+            function onCancel() { cleanup(); }
+            function onOverlayClick(e) { if (e.target === overlay) cleanup(); }
+
+            okBtn.addEventListener('click', onOk);
+            cancelBtn.addEventListener('click', onCancel);
+            overlay.addEventListener('click', onOverlayClick);
+        }
+
+        async function jalankanPindahSalesKeSampah() {
             if (salesRowsSelected.size === 0) { showToast('⚠️ Pilih minimal 1 baris data terlebih dahulu (centang di kolom paling kiri).', 'warning'); return; }
-            const alasan = prompt('Alasan pindahkan ke Data Sampah:\n(contoh: Salah Input, Gagal Transaksi/Batal, dll)', 'Salah Input');
-            if (alasan === null) return;
-            if (!confirm(`Pindahkan ${salesRowsSelected.size} baris data ke Data Sampah?\nData masih bisa dipulihkan kembali dari tab Save Data All.`)) return;
-            const jumlah = await pindahkanSalesKeSampah(Array.from(salesRowsSelected), alasan.trim() || '-');
+            showTrashConfirmModal(salesRowsSelected.size, async function(alasan) {
+                const jumlah = await pindahkanSalesKeSampah(Array.from(salesRowsSelected), alasan);
+                salesRowsSelected.clear();
+                rebuildSalesFilterOptions();
+                salesCurrentDateIndex = Infinity;
+                renderSales();
+                renderTrashTable();
+                renderRingkasanSaveAll();
+                updateSalesSelectedInfo();
+                showToast(`🗑️ ${jumlah} data dipindahkan ke Data Sampah.`, 'success');
+            });
+        }
+
+        // Tombol lama di dalam tabel (tetap ada, tidak perlu cari-cari lagi karena
+        // sekarang ada juga floating toolbar di bawah layar begitu ada centang).
+        document.getElementById('btnTrashSales').addEventListener('click', jalankanPindahSalesKeSampah);
+
+        // Tombol pada floating toolbar yang muncul otomatis saat ada baris dicentang.
+        document.getElementById('btnSalesToolbarTrash').addEventListener('click', jalankanPindahSalesKeSampah);
+
+        // Tombol "Batal" di floating toolbar: batalkan semua centang.
+        document.getElementById('btnSalesToolbarCancel').addEventListener('click', function() {
             salesRowsSelected.clear();
-            rebuildSalesFilterOptions();
-            salesCurrentDateIndex = Infinity;
-            renderSales();
-            renderTrashTable();
-            renderRingkasanSaveAll();
-            showToast(`🗑️ ${jumlah} data dipindahkan ke Data Sampah.`, 'success');
+            document.querySelectorAll('.sales-trash-checkbox').forEach(cb => cb.checked = false);
+            updateSalesSelectedInfo();
         });
 
         // ================================================================
@@ -6473,7 +6965,7 @@
                     const badgeClass = d._status === 'cocok' ? 'cocok' : 'tidak';
                     const stempel = d._status === 'cocok' ? '<span class="stempel-lunas">Lunas</span>' :
                         `<span class="badge ${badgeClass}">${statusLabel}</span>`;
-                    const kategori = d.Kategori || '';
+                    const kategori = (d.Produk || '').toLowerCase().includes('fitri') ? 'Minyak Fitri' : 'Rupa Rupa';
                     const fakturLinkStyle = 'color:#1f4e78;font-weight:700;text-decoration:underline;';
                     return `<tr>
                         <td><input type="checkbox" class="cash-row-checkbox" data-faktur="${noFaktur}" ${cbChecked}></td>
@@ -6482,7 +6974,7 @@
                         <td>${d.Customer || ''}</td>
                         <td>${d.Alamat || ''}</td>
                         <td>${d.Sales || ''}</td>
-                        <td>${kategori}</td>
+                        <td><span class="badge pt-tercatat">${kategori}</span></td>
                         <td class="num">${fmtRp(d.Total || 0)}</td>
                         <td>${stempel}</td>
                     </tr>`;
@@ -6558,6 +7050,18 @@
                 const total = cashTableFiltered.length;
                 statusEl.innerHTML = `${total} transaksi cash · ${selectedCount} faktur dipilih`;
             }
+            // Floating toolbar: muncul otomatis begitu ada faktur yang dicentang,
+            // sama seperti di tab Bank Data Penjualan.
+            const toolbar = document.getElementById('cashSelectionToolbar');
+            const toolbarCount = document.getElementById('cashToolbarCount');
+            if (toolbar) {
+                if (selectedCount > 0) {
+                    if (toolbarCount) toolbarCount.textContent = selectedCount;
+                    toolbar.classList.add('show');
+                } else {
+                    toolbar.classList.remove('show');
+                }
+            }
         }
 
         document.getElementById('cekCashSalesBody').addEventListener('change', function(e) {
@@ -6581,8 +7085,16 @@
             updateCashSelectedInfo();
         });
 
-        document.getElementById('cekCashBtnSendToTab6').addEventListener('click', function() {
+        document.getElementById('btnCashToolbarSend').addEventListener('click', function() {
             sendSelectedToTab6();
+        });
+
+        document.getElementById('btnCashToolbarCancel').addEventListener('click', function() {
+            cashChecked = {};
+            document.querySelectorAll('.cash-row-checkbox').forEach(cb => cb.checked = false);
+            const selectAll = document.getElementById('cashSelectAll');
+            if (selectAll) selectAll.checked = false;
+            updateCashSelectedInfo();
         });
 
         // ================================================================
@@ -6824,6 +7336,18 @@
                 let baseText = statusEl.textContent.replace(/·.*$/, '').trim();
                 statusEl.innerHTML = `${baseText} · ${selectedCount} faktur dipilih`;
             }
+            // Floating toolbar: muncul otomatis begitu ada faktur yang dicentang,
+            // sama seperti di tab Cek Cash.
+            const toolbar = document.getElementById('ptSelectionToolbar');
+            const toolbarCount = document.getElementById('ptToolbarCount');
+            if (toolbar) {
+                if (selectedCount > 0) {
+                    if (toolbarCount) toolbarCount.textContent = selectedCount;
+                    toolbar.classList.add('show');
+                } else {
+                    toolbar.classList.remove('show');
+                }
+            }
         }
 
         document.getElementById('ptTbody').addEventListener('change', function(e) {
@@ -6884,6 +7408,7 @@
                 ` : '';
 
             document.getElementById('ptDetailBody').innerHTML = `
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 18px;">
                     <div><strong>No. Faktur:</strong> ${r.noFaktur || '-'}</div>
                     <div><strong>Customer:</strong> ${r.customer || '-'} ${r.namaTokoUM && r.namaTokoUM !== r.customer ? `(uang masuk: ${r.namaTokoUM})` : ''}</div>
                     <div><strong>Alamat:</strong> ${r.alamat || '-'}</div>
@@ -6892,14 +7417,17 @@
                     <div><strong>Tgl Jual:</strong> ${fmtTanggal(r.tanggal)}</div>
                     <div><strong>Tgl Jatuh Tempo:</strong> ${r.jt || 'Belum diketahui'}</div>
                     <div><strong>Pembayaran:</strong> ${r.pembayaran || 'Tempo'}</div>
+                    </div>
                     ${multiItemNoticeHtml}
                     <hr style="margin:8px 0; border:none; border-top:1px solid var(--line);">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 18px;">
                     <div><strong>Total Tagihan:</strong> ${fmtRp(totalTagihanPakai)}</div>
                     <div><strong>Dibayar Cash:</strong> ${r.bayarCash!=null ? fmtRp(r.bayarCash) : '-'}</div>
                     <div><strong>Dibayar Transfer:</strong> ${r.bayarTransfer!=null ? fmtRp(r.bayarTransfer) : '-'}</div>
                     <div><strong>Total Dibayar:</strong> ${r.totalBayar!=null ? fmtRp(r.totalBayar) : '-'}</div>
                     <div><strong>Sisa Tagihan:</strong> <span style="color:${belumBayar>0.5 ? '#b91c1c':'#1e7a46'}; font-weight:700;">${fmtRp(belumBayar)}</span></div>
                     <div><strong>Tgl Bayar (perkiraan):</strong> ${r.tanggalBayar || '-'}</div>
+                    </div>
                     <hr style="margin:8px 0; border:none; border-top:1px solid var(--line);">
                     <div><strong>Status:</strong> <span class="badge pt-${r.statusClass}">${ptStatusLabel(r.statusClass)}</span></div>
                     <div><strong>Keterangan (dari Uang Masuk):</strong> ${r.statusClass === 'lunas' ? '<span class="stempel-lunas-lg">Lunas</span>' : (r.ketRaw || 'Belum ada catatan di Data Uang Masuk')}</div>
@@ -7036,7 +7564,7 @@
 
             document.getElementById('detailModalTitleGlobal').textContent = `🧾 Detail Faktur - ${noFaktur}`;
             document.getElementById('detailModalBodyGlobal').innerHTML = `
-                    <div style="font-size:11px; line-height:1.8;">
+                    <div style="font-size:11px; line-height:1.8; display:grid; grid-template-columns:1fr 1fr; gap:2px 18px;">
                         <div><strong>No. Faktur:</strong> ${escapeHtml(noFaktur)}</div>
                         <div><strong>Tanggal:</strong> ${fmtTanggal(d.Tanggal)}</div>
                         <div><strong>Sales:</strong> ${escapeHtml(d.Sales || '-')}</div>
@@ -7070,8 +7598,9 @@
                     </table>
                     <hr style="margin:8px 0; border:none; border-top:1px solid var(--line);">
                     <div style="font-size:11px; line-height:1.8;">
-                        <div><strong>💰 Status Pembayaran (dari Data Uang Masuk):</strong> ${statusLabel}</div>
+                        <div style="margin-bottom:2px;"><strong>💰 Status Pembayaran (dari Data Uang Masuk):</strong> ${statusLabel}</div>
                         ${bayar ? `
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 18px;">
                         <div><strong>Toko (Uang Masuk):</strong> ${escapeHtml(bayar.namaToko || '-')}</div>
                         <div><strong>Tgl Jatuh Tempo:</strong> ${escapeHtml(bayar.jt || '-')}</div>
                         <div><strong>Tagihan:</strong> ${fmtRp(bayar.tagihan)}</div>
@@ -7079,6 +7608,7 @@
                         <div><strong>Dibayar Transfer:</strong> ${fmtRp(bayar.bayarTransfer)}</div>
                         <div><strong>Total Dibayar:</strong> ${fmtRp(bayar.totalBayar)}</div>
                         <div><strong>Keterangan:</strong> ${escapeHtml(bayar.ket || '-')}</div>
+                        </div>
                         ` : `<div style="color:#b91c1c;">Belum ada data pembayaran yang cocok di Data Uang Masuk.</div>`}
                     </div>
                     <hr style="margin:8px 0; border:none; border-top:1px solid var(--line);">
@@ -7420,8 +7950,16 @@
             switchTab('tab6');
         }
 
-        document.getElementById('ptBtnSendToTab6').addEventListener('click', function() {
+        document.getElementById('btnPtToolbarSend').addEventListener('click', function() {
             sendSelectedToTab6();
+        });
+
+        document.getElementById('btnPtToolbarCancel').addEventListener('click', function() {
+            ptChecked = {};
+            document.querySelectorAll('.pt-row-checkbox').forEach(cb => cb.checked = false);
+            const selectAll = document.getElementById('ptSelectAll');
+            if (selectAll) selectAll.checked = false;
+            updatePiutangSelectedInfo();
         });
 
         document.getElementById('tagihanBtnRefresh').addEventListener('click', function() {
@@ -10596,6 +11134,29 @@
         document.getElementById('pengeluaranPrintBtn').addEventListener('click', function() {
             const label = document.getElementById('pgPrintBulanLabel');
             if (label) label.textContent = fmtBulanTahun(pengeluaranBulan);
+
+            document.body.classList.add('printing-pengeluaran');
+            let sudahDibersihkanPg = false;
+            function bersihkanPrintingPengeluaran() {
+                if (sudahDibersihkanPg) return;
+                sudahDibersihkanPg = true;
+                document.body.classList.remove('printing-pengeluaran');
+                window.onafterprint = null;
+                if (pgPrintMql) {
+                    if (pgPrintMql.removeEventListener) pgPrintMql.removeEventListener('change', pgPrintMqlHandler);
+                    else pgPrintMql.removeListener(pgPrintMqlHandler);
+                }
+            }
+            window.onafterprint = bersihkanPrintingPengeluaran;
+            let pgPrintMql = window.matchMedia ? window.matchMedia('print') : null;
+            function pgPrintMqlHandler(mql) {
+                if (!mql.matches) bersihkanPrintingPengeluaran();
+            }
+            if (pgPrintMql) {
+                if (pgPrintMql.addEventListener) pgPrintMql.addEventListener('change', pgPrintMqlHandler);
+                else pgPrintMql.addListener(pgPrintMqlHandler);
+            }
+
             window.print();
         });
 

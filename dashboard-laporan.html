@@ -159,25 +159,26 @@
         }
         .tabs {
             display: flex;
-            gap: 2px;
-            background: #e5e7eb;
-            padding: 0 12px;
-            border-bottom: 2px solid #cbd5e1;
+            gap: 6px;
+            background: #fff;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e2e8f0;
             position: sticky;
             top: 36px;
             z-index: 39;
             flex-wrap: wrap;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
         }
         .tab-btn {
-            padding: 6px 14px;
-            border: none;
-            background: transparent;
+            padding: 7px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            background: #f8fafc;
             font-size: 11px;
             font-weight: 700;
             color: #64748b;
             cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all 0.15s;
+            transition: all 0.18s ease;
             white-space: nowrap;
             display: inline-flex;
             align-items: center;
@@ -201,6 +202,8 @@
         .tab-btn.active .tab-icon {
             opacity: 1;
         }
+        /* Semua tab aktif memakai gradient ungu-biru yang sama seperti header tabel,
+           supaya tampilan tab & tabel senada. */
         .tab-btn[data-tab="tab1"].active,
         .tab-btn[data-tab="tab2"].active,
         .tab-btn[data-tab="tab3"].active,
@@ -210,8 +213,10 @@
         .tab-btn[data-tab="tab8"].active,
         .tab-btn[data-tab="tab9"].active,
         .tab-btn[data-tab="tab10"].active {
-            color: #1d4ed8;
-            border-bottom-color: #1d4ed8;
+            color: #fff;
+            border-color: transparent;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.35);
         }
         .tab-btn[data-tab="tab1"].active .tab-icon,
         .tab-btn[data-tab="tab2"].active .tab-icon,
@@ -222,7 +227,7 @@
         .tab-btn[data-tab="tab8"].active .tab-icon,
         .tab-btn[data-tab="tab9"].active .tab-icon,
         .tab-btn[data-tab="tab10"].active .tab-icon {
-            color: #1d4ed8;
+            color: #fff;
         }
         .tab-btn[data-tab="tab1"].active .badge-tab,
         .tab-btn[data-tab="tab2"].active .badge-tab,
@@ -233,27 +238,229 @@
         .tab-btn[data-tab="tab8"].active .badge-tab,
         .tab-btn[data-tab="tab9"].active .badge-tab,
         .tab-btn[data-tab="tab10"].active .badge-tab {
-            background: #1d4ed8;
+            background: rgba(255, 255, 255, 0.28);
+            color: #fff;
         }
         .tab-btn:hover {
-            color: #1e293b;
-            background: rgba(0, 0, 0, 0.03);
+            color: #4c51bf;
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            transform: translateY(-1px);
         }
-        .tab-btn.active {
-            color: #1e293b;
-            border-bottom-color: #2d3748;
-            background: #fff;
+        .tab-btn.active:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(102, 126, 234, 0.45);
         }
         .tab-btn .badge-tab {
-            background: #94a3b8;
-            color: #fff;
+            background: #cbd5e1;
+            color: #334155;
             border-radius: 20px;
-            padding: 0 8px;
+            padding: 1px 7px;
             font-size: 9px;
-            margin-left: 4px;
+            font-weight: 700;
+            margin-left: 2px;
+            min-width: 15px;
+            text-align: center;
+            display: inline-block;
         }
-        .tab-btn.active .badge-tab {
-            background: #2d3748;
+
+        /* ===== FLOATING SELECTION TOOLBAR (muncul otomatis saat ada centang) ===== */
+        .selection-toolbar {
+            display: none;
+            position: fixed;
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%) translateY(16px);
+            z-index: 500;
+            align-items: center;
+            gap: 14px;
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            color: #fff;
+            padding: 10px 14px 10px 18px;
+            border-radius: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            max-width: calc(100vw - 24px);
+        }
+        .selection-toolbar.show {
+            display: flex;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .selection-toolbar .sel-info {
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .selection-toolbar .sel-info .sel-count {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 2px 9px;
+            font-size: 11px;
+        }
+        .selection-toolbar .btn-sel-cancel {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #cbd5e1;
+            padding: 7px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .selection-toolbar .btn-sel-cancel:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+        .selection-toolbar .btn-sel-trash {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            box-shadow: 0 3px 10px rgba(217, 119, 6, 0.4);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .selection-toolbar .btn-sel-trash:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+        .selection-toolbar .btn-sel-send {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            box-shadow: 0 3px 10px rgba(22, 163, 74, 0.4);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .selection-toolbar .btn-sel-send:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+
+        /* ===== MODAL KONFIRMASI CUSTOM (pengganti confirm()/prompt() bawaan) ===== */
+        .confirm-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9990;
+            background: rgba(15, 23, 42, 0.55);
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            backdrop-filter: blur(1px);
+        }
+        .confirm-modal-overlay.show {
+            display: flex;
+        }
+        .confirm-modal-box {
+            background: #fff;
+            width: 100%;
+            max-width: 360px;
+            border-radius: 16px;
+            padding: 22px 22px 18px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+            text-align: center;
+            animation: confirmPop 0.16s ease;
+        }
+        @keyframes confirmPop {
+            from { transform: scale(0.94); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .confirm-modal-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #fff;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            box-shadow: 0 6px 16px rgba(217, 119, 6, 0.35);
+        }
+        .confirm-modal-box h3 {
+            font-size: 15px;
+            color: #1e293b;
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+        .confirm-modal-box p {
+            font-size: 11.5px;
+            color: #64748b;
+            line-height: 1.5;
+            margin-bottom: 14px;
+        }
+        .confirm-modal-reason {
+            text-align: left;
+            margin-bottom: 16px;
+        }
+        .confirm-modal-reason label {
+            display: block;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+        .confirm-modal-reason input {
+            width: 100%;
+            padding: 9px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+        .confirm-modal-reason input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        }
+        .confirm-modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .confirm-modal-actions button {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+        }
+        .confirm-modal-btn-cancel {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        .confirm-modal-btn-cancel:hover {
+            background: #e2e8f0;
+        }
+        .confirm-modal-btn-ok {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);
+        }
+        .confirm-modal-btn-ok:hover {
+            filter: brightness(1.06);
         }
 
         .tab-content {
@@ -367,169 +574,215 @@
             font-style: italic;
         }
         .btn {
-            padding: 3px 12px;
+            padding: 6px 14px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             font-size: 10px;
-            transition: background 0.15s, box-shadow 0.15s;
-            background: #64748b;
+            transition: all 0.2s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
-            box-shadow: var(--shadow);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
             white-space: nowrap;
             height: 28px;
             display: inline-flex;
             align-items: center;
-            gap: 3px;
+            gap: 4px;
             line-height: 1;
         }
         .btn:hover {
-            background: #475569;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
         }
         .btn-reset {
-            background: #6b7280;
+            background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+            box-shadow: 0 2px 8px rgba(148, 163, 184, 0.2);
         }
         .btn-reset:hover {
-            background: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(148, 163, 184, 0.3);
         }
         .btn-danger {
-            background: #dc2626;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
         }
         .btn-danger:hover {
-            background: #b91c1c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
         }
         .btn-outline {
-            background: #fff;
-            color: #1e293b;
-            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #667eea;
+            border: 2px solid #667eea;
+            box-shadow: none;
         }
         .btn-outline:hover {
-            background: #f1f3f6;
+            background: #f0f4ff;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
         }
         .btn-orange {
-            background: #d97706;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: #fff;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
         }
         .btn-orange:hover {
-            background: #b45309;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
         }
         .btn-success {
-            background: #1e7a46;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: #fff;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
         }
         .btn-success:hover {
-            background: #145c33;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
         }
         .btn-purple {
-            background: #7c3aed;
+            background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
             color: #fff;
+            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
         }
         .btn-purple:hover {
-            background: #6d28d9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
         }
         .cards {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 10px;
+            gap: 12px;
+            margin-bottom: 16px;
         }
         .card {
             flex: 1 0 auto;
-            min-width: 100px;
-            background: #fff;
-            border-radius: var(--radius);
-            padding: 4px 12px;
-            border: 1px solid #d1d5db;
-            box-shadow: var(--shadow);
+            min-width: 140px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 12px 16px;
+            border: none;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
             display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 8px;
-            height: 36px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            height: auto;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
         }
         .card .label {
             font-size: 9px;
             font-weight: 700;
-            color: #6b7280;
+            color: rgba(255, 255, 255, 0.8);
             text-transform: uppercase;
             letter-spacing: 0.4px;
             white-space: nowrap;
         }
         .card .value {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 700;
-            color: #1e293b;
+            color: #ffffff;
             white-space: nowrap;
         }
         .card .value.green {
-            color: var(--green);
+            color: #10b981;
         }
         .card .value.orange {
-            color: var(--orange);
+            color: #f59e0b;
         }
         .card .value.red {
-            color: var(--red);
+            color: #ef4444;
         }
         .card .value.blue {
-            color: var(--blue);
+            color: #3b82f6;
         }
         .card .value.purple {
-            color: #6d28d9;
+            color: #a78bfa;
+        }
+        #rpCards .value.green,
+        #rpCards .value.orange,
+        #rpCards .value.red,
+        #rpCards .value.blue,
+        #rpCards .value.purple,
+        #pgCards .value.green,
+        #pgCards .value.orange,
+        #pgCards .value.red,
+        #pgCards .value.blue,
+        #pgCards .value.purple {
+            color: #ffffff;
         }
         .filter-bar {
             display: flex;
             flex-wrap: nowrap;
             align-items: flex-end;
             gap: 6px 10px;
-            padding: 6px 12px;
-            background: #fff;
-            border: 1px solid #d1d5db;
-            border-radius: var(--radius);
-            margin-bottom: 8px;
-            box-shadow: var(--shadow);
+            padding: 12px 16px;
+            background: linear-gradient(to right, #f8fafc, #f0f4ff);
+            border: 1px solid #e8ecf4;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
             overflow-x: auto;
+        }
+        .filter-bar,
+        #tab3 .cash-filter-bar,
+        #tab8 .trash-filter-bar {
+            position: sticky;
+            top: var(--sticky-filter-top, 84px);
+            z-index: 20;
         }
         .filter-bar .field {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 4px;
             flex: 0 0 auto;
             min-width: 60px;
         }
         .filter-bar .field label {
             font-size: 7px;
             font-weight: 700;
-            color: #4a5568;
+            color: #667eea;
             text-transform: uppercase;
-            letter-spacing: 0.2px;
+            letter-spacing: 0.3px;
         }
         .filter-bar .field input,
         .filter-bar .field select {
-            padding: 2px 4px;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
+            padding: 6px 8px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 6px;
             font-size: 9px;
             font-family: inherit;
-            background: #fff;
-            height: 24px;
+            background: #ffffff;
+            height: 28px;
             min-width: 70px;
             width: 100%;
+            transition: all 0.2s ease;
+        }
+        .filter-bar .field input:hover,
+        .filter-bar .field select:hover {
+            border-color: #667eea;
         }
         .filter-bar .field input:focus,
         .filter-bar .field select:focus {
-            outline: 2px solid #b0b8c5;
-            border-color: transparent;
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: #f0f4ff;
         }
         .filter-bar .field .btn {
-            height: 24px;
-            padding: 0 8px;
+            height: 28px;
+            padding: 0 10px;
             font-size: 9px;
+            margin-top: 2px;
         }
         .filter-bar .info-right {
             font-size: 9px;
             font-weight: 600;
-            color: #475569;
+            color: #667eea;
             margin-left: auto;
             padding-left: 10px;
             border-left: 1px solid #e2e8f0;
@@ -556,7 +809,9 @@
             white-space: nowrap;
         }
         .table-wrap {
-            overflow: auto;
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 65vh;
             border: 1px solid #d1d5db;
             border-radius: var(--radius);
             background: #fff;
@@ -564,42 +819,104 @@
         }
         .table-wrap table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             font-size: 0.65rem;
             min-width: 480px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
         .table-wrap th {
             position: sticky;
             top: 0;
-            background: #d1d7e0;
-            color: #1e293b;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
             text-align: left;
-            padding: 4px 8px;
+            padding: 12px 8px;
             font-size: 0.6rem;
             text-transform: uppercase;
-            letter-spacing: 0.2px;
-            border-right: 1px solid rgba(0, 0, 0, 0.04);
-            border-bottom: 2px solid #b0b8c5;
+            letter-spacing: 0.5px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
             white-space: nowrap;
             font-weight: 700;
             z-index: 5;
+            border: none;
         }
         .table-wrap td {
-            padding: 3px 8px;
-            border-bottom: 1px solid #e5e9ef;
+            padding: 10px 8px;
+            border-bottom: 1px solid #e8ecf4;
             white-space: nowrap;
             font-size: 0.65rem;
             background: #fafbfc;
+            transition: all 0.2s ease;
+        }
+        .table-wrap tbody tr {
+            transition: all 0.2s ease;
+        }
+        .table-wrap tbody tr:hover {
+            background: #f0f4ff;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
         }
         .table-wrap tbody tr:nth-child(even) td {
-            background: #f1f3f6;
+            background: #f8fafc;
         }
-        .table-wrap tbody tr:hover td {
-            background: #e8ecf2;
+        .table-wrap tbody tr:nth-child(even):hover td {
+            background: #f0f4ff;
         }
         .table-wrap td.num,
         .table-wrap th.num {
             text-align: right;
+        }
+        /* Expandable Row Styling */
+        .table-wrap .expand-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #667eea;
+            padding: 4px 8px;
+            transition: transform 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .table-wrap .expand-btn.open {
+            transform: rotate(90deg);
+        }
+        .table-wrap tr.detail-row {
+            display: none;
+        }
+        .table-wrap tr.detail-row.active {
+            display: table-row;
+        }
+        .table-wrap .detail-cell {
+            padding: 0;
+            background: linear-gradient(to right, #f8fafc, #f0f4ff);
+            border-bottom: 2px solid #e8ecf4;
+        }
+        .table-wrap .detail-content {
+            padding: 12px 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .table-wrap .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .table-wrap .detail-label {
+            font-size: 0.55rem;
+            font-weight: 700;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .table-wrap .detail-value {
+            font-size: 0.65rem;
+            color: #1e293b;
+            font-weight: 500;
         }
         /* Global: kolom angka selalu rata kanan di SEMUA tabel, termasuk tabel
            di dalam modal (mis. modal detail faktur) yang berada di luar .table-wrap.
@@ -609,6 +926,28 @@
         th.num {
             text-align: right;
         }
+        /* Responsive & Hidden Columns untuk Small Screens */
+        @media (max-width: 1200px) {
+            .table-wrap th:nth-child(n+5),
+            .table-wrap td:nth-child(n+5) {
+                display: none;
+            }
+        }
+        
+        /* Stempel Lunas Modern */
+        .stempel-lunas {
+            display: inline-block;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
         td.center,
         th.center {
             text-align: center;
@@ -616,9 +955,9 @@
         .table-wrap td.center {
             text-align: center;
         }
-        /* ===== TABEL PENGELUARAN ala Excel "LAPORAN KAS KECIL" (sinkron dengan Dashboard Kerja) ===== */
+        /* ===== TABEL PENGELUARAN ala Excel "LAPORAN KAS KECIL" ===== */
         .pg-excel-wrap table {
-            min-width: 640px;
+            min-width: 720px;
             font-size: 0.68rem;
         }
         .pg-excel-wrap th {
@@ -646,6 +985,42 @@
         .pg-excel-wrap tr.pg-row-total td.pg-col-kantor,
         .pg-excel-wrap tr.pg-row-total td.pg-col-burung,
         .pg-excel-wrap tr.pg-row-total td.pg-col-total { background: #f7dede; }
+        .pg-excel-wrap td.pg-col-aksi { text-align: center; white-space: nowrap; }
+        .pg-excel-wrap .pg-del-btn {
+            border: none; background: transparent; color: #b91c1c; cursor: pointer;
+            font-size: 10px; padding: 1px 4px; opacity: 0.55; border-radius: 4px;
+        }
+        .pg-excel-wrap .pg-del-btn:hover { opacity: 1; background: #fee2e2; }
+        .pg-excel-wrap tr.pg-row-signature td {
+            border: none; background: #fff; font-size: 0.68rem; padding-top: 14px;
+        }
+        .pg-excel-wrap tr.pg-row-signature-line td { border: none; background: #fff; padding-top: 34px; }
+        .pg-excel-wrap tr.pg-row-signature-line td span {
+            display: inline-block; border-top: 1px solid #64748b; padding-top: 2px; color: #6b7280;
+        }
+        .pg-excel-wrap td input {
+            box-sizing: border-box;
+            padding: 3px 6px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 0.68rem;
+            font-family: inherit;
+            height: 24px;
+        }
+        .pg-excel-wrap td input[type="number"] { text-align: right; }
+        .pg-print-title { text-align: center; margin-bottom: 10px; }
+        .pg-print-title h2 { font-size: 16px; margin-bottom: 2px; }
+        .pg-print-title div { font-size: 12px; color: #4a5568; }
+        @media print {
+            body * { visibility: hidden; }
+            #pgPrintArea, #pgPrintArea * { visibility: visible; }
+            #pgPrintArea { position: absolute; top: 0; left: 0; width: 100%; }
+            #pgPrintArea .pg-print-title { display: block !important; }
+            .pg-excel-wrap td.pg-col-aksi, .pg-excel-wrap th.pg-th-aksi { display: none !important; }
+            .pg-excel-wrap .table-wrap, .table-wrap.pg-excel-wrap { border: none; box-shadow: none; overflow: visible; }
+            .pg-excel-wrap table { font-size: 10px; }
+            .pg-excel-wrap tr.pg-row-spacer td { padding: 1px; }
+        }
         .empty-msg {
             padding: 16px;
             text-align: center;
@@ -657,44 +1032,51 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 4px 12px;
+            padding: 12px 16px;
             font-size: 10px;
             flex-wrap: wrap;
-            gap: 4px;
-            background: #fff;
-            border-radius: 0 0 var(--radius) var(--radius);
-            border: 1px solid #d1d5db;
+            gap: 8px;
+            background: linear-gradient(to right, #f8fafc, #f0f4ff);
+            border-radius: 0 0 12px 12px;
+            border: 1px solid #e8ecf4;
             border-top: none;
-            box-shadow: var(--shadow);
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
             margin-top: -1px;
         }
         .pagination button {
-            background: #64748b;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
             border: none;
-            padding: 2px 10px;
-            border-radius: 4px;
+            padding: 6px 12px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 9px;
-            transition: background 0.15s;
-            height: 24px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            height: 28px;
             line-height: 1;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.2);
         }
         .pagination button:hover {
-            background: #475569;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
         }
         .pagination button:disabled {
             opacity: 0.4;
             cursor: default;
-            background: #94a3b8;
+            background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+            transform: none;
         }
         .badge-count {
-            background: #e5e7eb;
-            padding: 1px 10px;
-            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
+            padding: 4px 12px;
+            border-radius: 20px;
             font-weight: 600;
             font-size: 9px;
-            color: #1e293b;
+            color: #667eea;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
         .two-col {
             display: grid;
@@ -747,50 +1129,68 @@
         }
         .badge {
             display: inline-block;
-            padding: 0 8px;
-            border-radius: 12px;
+            padding: 4px 10px;
+            border-radius: 20px;
             font-size: 8px;
             font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            transition: all 0.2s ease;
         }
         .badge.cocok {
-            background: #d4edda;
-            color: var(--good);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
         .badge.tidak {
-            background: #f8d7da;
-            color: var(--red);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(244, 63, 94, 0.1) 100%);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
         .badge.cash {
-            background: #d4edda;
-            color: var(--good);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
         .badge.tempo {
-            background: #fde8d8;
-            color: var(--warn);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 146, 60, 0.1) 100%);
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }
         .badge.pt-lunas {
-            background: #d4edda;
-            color: var(--good);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+            color: #059669;
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
         .badge.pt-belum {
-            background: #f8d7da;
-            color: var(--warn);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(244, 63, 94, 0.1) 100%);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
         .badge.pt-titip {
-            background: #fdf1e0;
-            color: #a5650f;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 146, 60, 0.1) 100%);
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }
         .badge.pt-tagih {
-            background: #f8d7da;
-            color: var(--warn);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(244, 63, 94, 0.1) 100%);
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
         .badge.pt-overdue {
-            background: #fbdcdc;
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(185, 28, 28, 0.1) 100%);
             color: #b91c1c;
+            border: 1px solid rgba(220, 38, 38, 0.3);
         }
         .badge.pt-tercatat {
-            background: #e6eaf0;
-            color: #4a5568;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 100%);
+            color: #667eea;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+        .badge.pt-tercatat {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.1) 100%);
+            color: #667eea;
+            border: 1px solid rgba(102, 126, 234, 0.3);
         }
         .pt-row-overdue td {
             background: #fff5f5;
@@ -812,6 +1212,7 @@
             font-size: 9px;
             color: #64748b;
             padding: 4px 12px 0;
+            display: none;
         }
         .piutang-summary {
             background: #fef4ea;
@@ -2609,47 +3010,57 @@
             margin-left: auto;
         }
         #tab3 .cash-table-wrap {
-            border: 1px solid #d1d5db;
-            border-radius: var(--radius);
+            border: none;
+            border-radius: 12px;
             background: #fff;
-            box-shadow: var(--shadow);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             overflow: auto;
-            max-height: 500px;
         }
         #tab3 .cash-table-wrap table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             font-size: 0.65rem;
             min-width: 700px;
+            border-radius: 12px;
+            overflow: hidden;
         }
         #tab3 .cash-table-wrap th {
             position: sticky;
             top: 0;
-            background: #d1d7e0;
-            color: #1e293b;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
             text-align: left;
-            padding: 4px 8px;
+            padding: 12px 8px;
             font-size: 0.6rem;
             text-transform: uppercase;
-            letter-spacing: 0.2px;
-            border-right: 1px solid rgba(0,0,0,0.04);
-            border-bottom: 2px solid #b0b8c5;
+            letter-spacing: 0.5px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
             white-space: nowrap;
             font-weight: 700;
             z-index: 5;
+            border: none;
         }
         #tab3 .cash-table-wrap td {
-            padding: 3px 8px;
-            border-bottom: 1px solid #e5e9ef;
+            padding: 10px 8px;
+            border-bottom: 1px solid #e8ecf4;
             white-space: nowrap;
             font-size: 0.65rem;
             background: #fafbfc;
+            transition: all 0.2s ease;
         }
-        #tab3 .cash-table-wrap tbody tr:nth-child(even) td {
-            background: #f1f3f6;
+        #tab3 .cash-table-wrap tbody tr {
+            transition: all 0.2s ease;
         }
         #tab3 .cash-table-wrap tbody tr:hover td {
-            background: #e8ecf2;
+            background: #fff4f6;
+            box-shadow: 0 2px 8px rgba(245, 87, 108, 0.1);
+        }
+        #tab3 .cash-table-wrap tbody tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+        #tab3 .cash-table-wrap tbody tr:nth-child(even):hover td {
+            background: #fff4f6;
         }
         #tab3 .cash-table-wrap td.num {
             text-align: right;
@@ -2843,6 +3254,13 @@
             <div class="card"><span class="label">UANG MASUK MINYAK</span><span class="value orange" id="pemTotalMinyak">Rp 0</span></div>
             <div class="card"><span class="label">UANG MASUK RUPA RUPA</span><span class="value purple" id="pemTotalRupa">Rp 0</span></div>
             <div class="card"><span class="label">GRAND TOTAL</span><span class="value" id="pemGrandTotal">Rp 0</span></div>
+        </div>
+        <div class="cards" id="pemasukanCards2">
+            <div class="card" style="flex-direction:row;flex-wrap:nowrap;align-items:center;gap:10px;padding:8px 14px;min-width:280px;">
+                <span class="label" id="pemHariLabel" style="white-space:nowrap;">UANG MASUK TANGGAL</span>
+                <select id="pemTglPilih" style="font-size:11px;padding:3px 6px;border-radius:4px;border:none;background:rgba(255,255,255,0.25);color:#fff;font-weight:600;flex-shrink:0;"></select>
+                <span class="value" id="pemTglTerakhir" style="white-space:nowrap;">Rp 0</span>
+            </div>
         </div>
         <div class="toolbar">
             <div class="toolbar-left">
@@ -3519,6 +3937,13 @@
             <div class="card"><span class="label">Total Profit</span><span class="value green" id="rpTotalProfit">Rp 0</span></div>
             <div class="card"><span class="label">Dari Cash Dropping</span><span class="value" id="rpTotalCash">Rp 0</span></div>
             <div class="card"><span class="label">Dari Piutang Tempo</span><span class="value orange" id="rpTotalTempo">Rp 0</span></div>
+        </div>
+        <div class="cards" id="rpCards2">
+            <div class="card" style="flex-direction:row;flex-wrap:nowrap;align-items:center;gap:10px;padding:8px 14px;min-width:280px;">
+                <span class="label" id="rpHariLabel" style="white-space:nowrap;">PROFIT TANGGAL</span>
+                <select id="rpTglPilih" style="font-size:11px;padding:3px 6px;border-radius:4px;border:none;background:rgba(255,255,255,0.25);color:#fff;font-weight:600;flex-shrink:0;"></select>
+                <span class="value" id="rpTglTerakhir" style="white-space:nowrap;">Rp 0</span>
+            </div>
         </div>
         <div class="filter-bar">
             <div class="field"><label>Cari Faktur</label><input type="text" id="fFakturRP" placeholder="No Faktur..."></div>
@@ -4750,7 +5175,38 @@
             document.getElementById('pemTotalMinyak').textContent = fmtRp(minyak);
             document.getElementById('pemTotalRupa').textContent = fmtRp(rupa);
             document.getElementById('pemGrandTotal').textContent = fmtRp(grand);
+            const pemTglEl = document.getElementById('pemTglTerakhir');
+            if (pemTglEl) {
+                pemRebuildTglSelect();
+            }
         }
+
+        function pemRebuildTglSelect() {
+            const sel = document.getElementById('pemTglPilih');
+            if (!sel) return;
+            const prevValue = sel.value;
+            if (!cashFiltered.length) {
+                sel.innerHTML = '';
+                document.getElementById('pemTglTerakhir').textContent = 'Rp 0';
+                return;
+            }
+            sel.innerHTML = cashFiltered.map(item => {
+                const label = fmtTanggalHarianYY(item.tanggal, cashBulan) || item.tanggal;
+                return `<option value="${item.tanggal}">${label}</option>`;
+            }).join('');
+            const hasPrev = cashFiltered.some(it => it.tanggal === prevValue);
+            sel.value = hasPrev ? prevValue : cashFiltered[cashFiltered.length - 1].tanggal;
+            pemUpdateTglValue();
+        }
+
+        function pemUpdateTglValue() {
+            const sel = document.getElementById('pemTglPilih');
+            const pemTglEl = document.getElementById('pemTglTerakhir');
+            if (!sel || !pemTglEl) return;
+            const item = cashFiltered.find(it => it.tanggal === sel.value);
+            pemTglEl.textContent = fmtRp(item ? (item.grandTotal || 0) : 0);
+        }
+        document.getElementById('pemTglPilih').addEventListener('change', pemUpdateTglValue);
 
         // Event handler Tab 2 (disingkat)
         document.getElementById('pemasukanFileInput').addEventListener('change', function() {
@@ -8976,9 +9432,10 @@
 
         function rpHitungProfitFaktur(noFaktur) {
             const target = String(noFaktur || '').trim();
-            if (!target) return { qty: 0, profit: 0, produk: [], sales: '', tglFaktur: '' };
+            if (!target) return { qty: 0, profit: 0, produk: [], sales: '', tglFaktur: '', hargaBeliKosong: false };
             let qty = 0,
-                profit = 0;
+                profit = 0,
+                hargaBeliKosong = false;
             const produkSet = new Set();
             let sales = '',
                 tglFaktur = '';
@@ -8991,12 +9448,16 @@
                 } else if (item['Harga Beli'] !== undefined && item['Harga Beli'] !== '' && item[
                         'Harga Beli'] !== null) {
                     profit += (parseNumber(item['Harga Jual']) - parseNumber(item['Harga Beli'])) * jml;
+                } else {
+                    // Tidak ada kolom Profit maupun Harga Beli yang terisi untuk baris ini
+                    // -> profit baris ini tidak terhitung (dianggap 0), perlu ditandai sebagai peringatan.
+                    hargaBeliKosong = true;
                 }
                 if (item.Produk) produkSet.add(item.Produk);
                 if (!sales && item.Sales) sales = item.Sales;
                 if (!tglFaktur && item.Tanggal) tglFaktur = item.Tanggal;
             });
-            return { qty, profit, produk: Array.from(produkSet), sales, tglFaktur };
+            return { qty, profit, produk: Array.from(produkSet), sales, tglFaktur, hargaBeliKosong };
         }
 
         async function rpBangunData() {
@@ -9023,7 +9484,8 @@
                                 produk: info.produk.length ? info.produk.join(', ') : '-',
                                 sales: info.sales || det.sales || '-',
                                 qty: info.qty,
-                                profit: info.profit
+                                profit: info.profit,
+                                hargaBeliKosong: info.hargaBeliKosong
                             });
                         });
                     };
@@ -9060,6 +9522,32 @@
             });
         }
 
+        function rpRebuildTglSelect() {
+            const sel = document.getElementById('rpTglPilih');
+            if (!sel) return;
+            const uniqueDates = Array.from(new Set(rpFiltered.map(i => i.tglUangMasuk).filter(Boolean))).sort()
+                .reverse();
+            if (!uniqueDates.length) {
+                sel.innerHTML = '';
+                document.getElementById('rpTglTerakhir').textContent = 'Rp 0';
+                return;
+            }
+            const prevValue = sel.value;
+            sel.innerHTML = uniqueDates.map(d => `<option value="${d}">${fmtTanggal(d)}</option>`).join('');
+            sel.value = uniqueDates.includes(prevValue) ? prevValue : uniqueDates[0];
+            rpUpdateTglValue();
+        }
+
+        function rpUpdateTglValue() {
+            const sel = document.getElementById('rpTglPilih');
+            const rpTglEl = document.getElementById('rpTglTerakhir');
+            if (!sel || !rpTglEl) return;
+            const profitHariItu = rpFiltered.filter(i => i.tglUangMasuk === sel.value).reduce((s, i) => s + i.profit,
+                0);
+            rpTglEl.textContent = fmtRp(profitHariItu);
+        }
+        document.getElementById('rpTglPilih').addEventListener('change', rpUpdateTglValue);
+
         function renderRekapProfit() {
             rpFiltered = rpGetFiltered();
             rpFiltered.sort((a, b) => (b.tglUangMasuk || '').localeCompare(a.tglUangMasuk || ''));
@@ -9078,8 +9566,11 @@
             } else {
                 tbody.innerHTML = pageRows.map((item, i) => {
                     const label = item.sumber === 'Cash' ? 'Cash Dropping' : 'Piutang Tempo';
+                    const warn = item.hargaBeliKosong ?
+                        ' <span title="Harga Beli belum diisi untuk sebagian/semua item — profit faktur ini belum terhitung penuh" style="cursor:help;">⚠️</span>' :
+                        '';
                     return `<tr>
-                        <td><a href="#" class="rp-faktur-link" data-idx="${start + i}" style="color:inherit; font-weight:600; text-decoration:none;">${escapeHtml(item.noFaktur)}</a></td>
+                        <td><a href="#" class="rp-faktur-link" data-idx="${start + i}" style="color:inherit; font-weight:600; text-decoration:none;">${escapeHtml(item.noFaktur)}</a>${warn}</td>
                         <td>${fmtTanggal(item.tglFaktur)}</td>
                         <td>${label}</td>
                         <td>${fmtTanggal(item.tglUangMasuk)}</td>
@@ -9098,6 +9589,7 @@
             document.getElementById('rpTotalProfit').textContent = fmtRp(totalProfit);
             document.getElementById('rpTotalCash').textContent = fmtRp(totalCash);
             document.getElementById('rpTotalTempo').textContent = fmtRp(totalTempo);
+            rpRebuildTglSelect();
 
             document.getElementById('rpPageInfo').textContent = 'Halaman ' + rpPage + ' dari ' + totalPages;
             document.getElementById('rpPrevPage').disabled = (rpPage <= 1);
