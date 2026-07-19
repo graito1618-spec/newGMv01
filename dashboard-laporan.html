@@ -3948,6 +3948,7 @@
         <div class="filter-bar">
             <div class="field"><label>Cari Faktur</label><input type="text" id="fFakturRP" placeholder="No Faktur..."></div>
             <div class="field"><label>Bulan Uang Masuk</label><select id="fBulanRP"><option value="">Semua</option></select></div>
+            <div class="field"><label>Tanggal Uang Masuk</label><input type="date" id="fTanggalRP"></div>
             <div class="field"><label>Sumber Uang</label><select id="fSumberRP"><option value="">Semua</option><option value="Cash">Cash Dropping</option><option value="Tempo">Piutang Tempo</option></select></div>
             <div class="field" style="justify-content:flex-end;"><label>&nbsp;</label><button class="btn btn-reset" id="btnResetRP">↺ Reset</button></div>
             <div class="action-inline">
@@ -9585,10 +9586,12 @@
         function rpGetFiltered() {
             const faktur = document.getElementById('fFakturRP').value.trim().toLowerCase();
             const bulan = document.getElementById('fBulanRP').value;
+            const tanggal = document.getElementById('fTanggalRP').value;
             const sumber = document.getElementById('fSumberRP').value;
             return rpRawData.filter(r => {
                 if (faktur && !r.noFaktur.toLowerCase().includes(faktur)) return false;
                 if (bulan && r.tglUangMasuk.slice(0, 7) !== bulan) return false;
+                if (tanggal && r.tglUangMasuk !== tanggal) return false;
                 if (sumber && r.sumber !== sumber) return false;
                 return true;
             });
@@ -10201,6 +10204,10 @@
             rpPage = 1;
             renderRekapProfit();
         });
+        document.getElementById('fTanggalRP').addEventListener('change', function() {
+            rpPage = 1;
+            renderRekapProfit();
+        });
         document.getElementById('fSumberRP').addEventListener('change', function() {
             rpPage = 1;
             renderRekapProfit();
@@ -10208,6 +10215,7 @@
         document.getElementById('btnResetRP').addEventListener('click', function() {
             document.getElementById('fFakturRP').value = '';
             document.getElementById('fBulanRP').value = '';
+            document.getElementById('fTanggalRP').value = '';
             document.getElementById('fSumberRP').value = '';
             userSetBulan.rp = true;
             rpPage = 1;
