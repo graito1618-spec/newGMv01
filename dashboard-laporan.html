@@ -9444,11 +9444,17 @@
         let rpPage = 1;
         const rpRowsPerPage = 20;
 
-        function rpHitungProfitFaktur(noFaktur) {
+        // Menghitung BIAYA (Harga Beli x Jumlah) & metadata satu No.Faktur dari Bank Data
+        // Penjualan (Tab 1). Ini bukan profit — profit dihitung belakangan di rpBangunData
+        // dengan cara: (uang yang BENAR-BENAR diterima) - (biaya dari fungsi ini). Uang
+        // diterima dipakai sebagai dasar (bukan Harga Jual/Total faktur) karena Harga Jual
+        // & Disc kadang berubah/dinego saat penagihan, jadi angka yang benar-benar valid
+        // adalah nominal yang betulan masuk ke kas/rekening.
+        function rpHitungBiayaFaktur(noFaktur) {
             const target = String(noFaktur || '').trim();
-            if (!target) return { qty: 0, profit: 0, produk: [], sales: '', tglFaktur: '', hargaBeliKosong: false };
+            if (!target) return { qty: 0, hargaBeliXJumlah: 0, produk: [], sales: '', tglFaktur: '', hargaBeliKosong: false };
             let qty = 0,
-                profit = 0,
+                hargaBeliXJumlah = 0,
                 hargaBeliKosong = false;
             const produkSet = new Set();
             let sales = '',
@@ -9457,25 +9463,21 @@
                 if (normFaktur(item['No.Faktur']) !== normFaktur(target)) return;
                 const jml = parseNumber(item.Jumlah);
                 qty += jml;
-                if (item.Profit !== undefined && item.Profit !== '' && item.Profit !== null) {
-                    profit += parseNumber(item.Profit);
-                } else if (item['Harga Beli'] !== undefined && item['Harga Beli'] !== '' && item[
-                        'Harga Beli'] !== null) {
-                    profit += (parseNumber(item['Harga Jual']) - parseNumber(item['Harga Beli'])) * jml;
+                if (item['Harga Beli'] !== undefined && item['Harga Beli'] !== '' && item['Harga Beli'] !== null) {
+                    hargaBeliXJumlah += parseNumber(item['Harga Beli']) * jml;
                 } else {
-                    // Tidak ada kolom Profit maupun Harga Beli yang terisi untuk baris ini
-                    // -> profit baris ini tidak terhitung (dianggap 0), perlu ditandai sebagai peringatan.
+                    // Harga Beli belum diisi untuk baris ini -> biaya baris ini tidak
+                    // terhitung (dianggap 0), perlu ditandai sebagai peringatan.
                     hargaBeliKosong = true;
                 }
                 if (item.Produk) produkSet.add(item.Produk);
                 if (!sales && item.Sales) sales = item.Sales;
                 if (!tglFaktur && item.Tanggal) tglFaktur = item.Tanggal;
             });
-            return { qty, profit, produk: Array.from(produkSet), sales, tglFaktur, hargaBeliKosong };
+            return { qty, hargaBeliXJumlah, produk: Array.from(produkSet), sales, tglFaktur, hargaBeliKosong };
         }
 
         async function rpBangunData() {
-            const rows = [];
             // PENTING: pakai cashDataMap yang sudah dimuat & sudah disinkron di memori
             // (sama persis dengan yang dipakai tab Data Uang Masuk), BUKAN fetch ulang
             // langsung dari Firestore. Fetch ulang terpisah rawan race condition:
@@ -9483,6 +9485,13 @@
             // server saat fungsi ini jalan, Rekap Profit bisa dapat data lama/sebagian
             // (tanggal yang baru saja dicocokkan jadi "hilang" dari Rekap Profit,
             // padahal sudah muncul benar di tab Data Uang Masuk).
+            //
+            // LANGKAH 1: kumpulkan SEMUA kemunculan No.Faktur di piutangDetail &
+            // cashDroppingDetail (semua hari/bulan), beserta nominal uang yang BENAR-BENAR
+            // diterima saat itu (bayarCash + bayarTransfer). Satu No.Faktur bisa muncul
+            // berkali-kali karena dicicil di beberapa tanggal, atau dipecah sebagian Cash +
+            // sisanya Tempo — semua kemunculan itu perlu dijumlah, bukan dipilih salah satu.
+            const occurrences = [];
             Object.keys(cashDataMap).forEach(bulan => {
                 const tahun = (bulan || '').slice(0, 4) || String(new Date().getFullYear());
                 const bulanFallback = (bulan || '').slice(5, 7) || '01';
@@ -9491,26 +9500,70 @@
                     const dd = (parts[0] || '01').padStart(2, '0');
                     const mm = (parts[1] || bulanFallback).padStart(2, '0');
                     const tglUangMasuk = tahun + '-' + mm + '-' + dd;
-                    const proses = (list, sumber) => {
+                    const kumpulkan = (list, sumber) => {
                         (list || []).forEach(det => {
                             if (!det.noFaktur) return;
-                            const info = rpHitungProfitFaktur(det.noFaktur);
-                            rows.push({
-                                noFaktur: String(det.noFaktur).trim(),
-                                tglFaktur: info.tglFaktur || (det.tglFaktur ? toDateKey(det.tglFaktur) : ''),
-                                sumber: sumber,
-                                tglUangMasuk: tglUangMasuk,
-                                produk: info.produk.length ? info.produk.join(', ') : '-',
-                                sales: info.sales || det.sales || '-',
-                                qty: info.qty,
-                                profit: info.profit,
-                                hargaBeliKosong: info.hargaBeliKosong
-                            });
+                            const nominal = (det.totalBayar != null) ? parseNumber(det.totalBayar) :
+                                (parseNumber(det.bayarCash || 0) + parseNumber(det.bayarTransfer || 0));
+                            occurrences.push({ det, sumber, tglUangMasuk, nominal });
                         });
                     };
-                    proses(day.piutangDetail, 'Tempo');
-                    proses(day.cashDroppingDetail, 'Cash');
+                    kumpulkan(day.piutangDetail, 'Tempo');
+                    kumpulkan(day.cashDroppingDetail, 'Cash');
                 });
+            });
+
+            // LANGKAH 2: gabungkan per No.Faktur. Profit 1 faktur = (TOTAL uang yang
+            // benar-benar diterima, dijumlah dari semua cicilan/pembayaran Cash & Tempo)
+            // dikurangi (Harga Beli x Jumlah dari Bank Data Penjualan). Uang diterima
+            // dipakai sebagai dasar profit — bukan Harga Jual/Total di faktur — karena
+            // Harga Jual & Disc kadang berubah/dinego saat penagihan, sehingga nominal
+            // yang benar-benar masuk itulah yang valid mencerminkan hasil penjualan.
+            // Dengan menjumlah SEMUA kemunculan per faktur (bukan memilih salah satu),
+            // faktur yang dicicil tidak lagi kehitung profitnya berkali-kali.
+            const perFaktur = {};
+            occurrences.forEach(o => {
+                const key = normFaktur(o.det.noFaktur);
+                if (!key) return;
+                if (!perFaktur[key]) perFaktur[key] = { noFakturAsli: o.det.noFaktur, cash: 0, tempo: 0,
+                    tglCash: '', tglTempo: '' };
+                const p = perFaktur[key];
+                if (o.sumber === 'Cash') {
+                    p.cash += o.nominal;
+                    if (!p.tglCash || o.tglUangMasuk >= p.tglCash) p.tglCash = o.tglUangMasuk;
+                } else {
+                    p.tempo += o.nominal;
+                    if (!p.tglTempo || o.tglUangMasuk >= p.tglTempo) p.tglTempo = o.tglUangMasuk;
+                }
+            });
+
+            const rows = [];
+            Object.keys(perFaktur).forEach(key => {
+                const p = perFaktur[key];
+                const totalDiterima = p.cash + p.tempo;
+                if (totalDiterima <= 0) return;
+                const info = rpHitungBiayaFaktur(p.noFakturAsli);
+                const profitTotal = totalDiterima - info.hargaBeliXJumlah;
+                const buatBaris = (sumber, nominal, tgl) => {
+                    if (nominal <= 0) return;
+                    rows.push({
+                        noFaktur: String(p.noFakturAsli).trim(),
+                        tglFaktur: info.tglFaktur,
+                        sumber: sumber,
+                        tglUangMasuk: tgl,
+                        produk: info.produk.length ? info.produk.join(', ') : '-',
+                        sales: info.sales || '-',
+                        qty: info.qty,
+                        // Kalau faktur ini dibayar sebagian Cash & sebagian Tempo, profit
+                        // dibagi proporsional sesuai porsi nominal masing-masing, supaya
+                        // kartu Total Cash / Total Tempo tetap akurat sekaligus totalnya
+                        // (Total Profit) tetap benar (jumlah keduanya = profitTotal).
+                        profit: profitTotal * (nominal / totalDiterima),
+                        hargaBeliKosong: info.hargaBeliKosong
+                    });
+                };
+                buatBaris('Cash', p.cash, p.tglCash);
+                buatBaris('Tempo', p.tempo, p.tglTempo);
             });
             rpRawData = rows;
         }
