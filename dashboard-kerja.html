@@ -838,6 +838,11 @@
             background: #fafbfc;
             transition: all 0.2s ease;
         }
+        #tab1 .table-wrap th,
+        #tab4 .table-wrap th {
+            position: static;
+            top: auto;
+        }
         .table-wrap tbody tr {
             transition: all 0.2s ease;
         }
@@ -3033,6 +3038,10 @@
             z-index: 5;
             border: none;
         }
+        #tab3 .cash-table-wrap th {
+            position: static;
+            top: auto;
+        }
         #tab3 .cash-table-wrap td {
             padding: 10px 8px;
             border-bottom: 1px solid #e8ecf4;
@@ -3366,7 +3375,7 @@
             </div>
         </div>
 
-        <div class="cash-table-wrap">
+        <div class="cash-table-wrap" style="height: 485px; max-height: 485px;">
             <table>
                 <thead>
                     <tr>
@@ -3421,7 +3430,7 @@
                 </div>
             </div>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap" style="height: 485px; max-height: 485px;">
             <table>
                 <thead>
                     <tr>
