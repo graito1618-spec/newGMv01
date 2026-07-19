@@ -838,11 +838,6 @@
             background: #fafbfc;
             transition: all 0.2s ease;
         }
-        #tab1 .table-wrap th,
-        #tab4 .table-wrap th {
-            position: static;
-            top: auto;
-        }
         .table-wrap tbody tr {
             transition: all 0.2s ease;
         }
@@ -920,8 +915,8 @@
         }
         /* Responsive & Hidden Columns untuk Small Screens */
         @media (max-width: 1200px) {
-            .table-wrap th:nth-child(n+5),
-            .table-wrap td:nth-child(n+5) {
+            .table-wrap:not(#tagihanTableWrap) th:nth-child(n+5),
+            .table-wrap:not(#tagihanTableWrap) td:nth-child(n+5) {
                 display: none;
             }
         }
@@ -1282,6 +1277,23 @@
         .modal-close:hover {
             background: rgba(255, 255, 255, 0.3);
         }
+        /* Header biru tua khusus modal Detail Faktur - Cek Piutang & Cek Cash */
+        #ptDetailModal .modal-head,
+        #detailModalGlobal .modal-head {
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f2942 100%);
+        }
+        .info-kosong-mencolok {
+            display: block;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: #b91c1c;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 12px 10px;
+            margin: 6px 0;
+        }
         .modal-body {
             padding: 8px 14px;
             overflow-y: auto;
@@ -1593,6 +1605,138 @@
             border-radius: 3px;
             opacity: 0.85;
             pointer-events: none;
+        }
+
+        /* ================================================================
+           MODAL INPUT MANUAL (TAB PEMBAYARAN) — Modern
+           ================================================================ */
+        .im-modal-box {
+            max-width: 900px;
+            width: 94%;
+            border-radius: 16px;
+            overflow: hidden;
+            padding: 0 !important;
+        }
+        .im-modal-head {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 16px 20px;
+            border-radius: 0;
+        }
+        .im-modal-head h2 {
+            color: #fff;
+            margin: 0;
+            font-size: 15px;
+        }
+        .im-modal-head .modal-close {
+            color: #fff;
+        }
+        .im-target-toggle {
+            display: flex;
+            gap: 8px;
+            padding: 12px 20px 0;
+            background: #f8fafc;
+        }
+        .im-toggle-btn {
+            flex: 1;
+            padding: 9px 10px;
+            border-radius: 10px;
+            border: 1.5px solid #e2e8f0;
+            background: #fff;
+            color: #64748b;
+            font-size: 11.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .im-toggle-btn:hover {
+            border-color: #a5b4fc;
+        }
+        .im-toggle-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            color: #fff;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.35);
+        }
+        .im-modal-body {
+            background: #f8fafc;
+            padding: 16px 20px 4px;
+            max-height: 58vh;
+            overflow-y: auto;
+        }
+        .im-section {
+            background: #fff;
+            border: 1px solid #e5e9ef;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+        }
+        .im-section-title {
+            font-size: 11px;
+            font-weight: 800;
+            color: #4c1d95;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .im-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 12px;
+        }
+        .im-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .im-span2 {
+            grid-column: span 2;
+        }
+        .im-field label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #6b7280;
+        }
+        .im-field input {
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 12px;
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .im-field input:focus {
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.12);
+        }
+        .im-total-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 12.5px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .im-total-box strong {
+            font-size: 16px;
+        }
+        .im-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 14px 20px;
+            background: #fff;
+            border-top: 1px solid #e5e9ef;
+        }
+        @media (max-width: 640px) {
+            .im-grid, .im-span2 {
+                grid-template-columns: 1fr;
+                grid-column: span 1;
+            }
         }
 
         /* Print styling untuk tab6 dan tab7 */
@@ -3038,10 +3182,6 @@
             z-index: 5;
             border: none;
         }
-        #tab3 .cash-table-wrap th {
-            position: static;
-            top: auto;
-        }
         #tab3 .cash-table-wrap td {
             padding: 10px 8px;
             border-bottom: 1px solid #e8ecf4;
@@ -3146,19 +3286,8 @@
         <button class="btn-sel-trash" id="btnSalesToolbarTrash"><i class="bi bi-trash3"></i> Pindah ke Sampah</button>
     </div>
 
-    <!-- ===== Floating Selection Toolbar (Cek Cash -> Cetak Tagihan) ===== -->
-    <div class="selection-toolbar" id="cashSelectionToolbar">
-        <div class="sel-info"><i class="bi bi-check2-square"></i> <span class="sel-count" id="cashToolbarCount">0</span> faktur dipilih</div>
-        <button class="btn-sel-cancel" id="btnCashToolbarCancel">Batal</button>
-        <button class="btn-sel-send" id="btnCashToolbarSend">📤 Kirim ke Cetak Tagihan</button>
-    </div>
+    <!-- ===== Floating toolbar Cek Cash & Cek Piutang dihapus: sekarang centang faktur langsung membuka modal konfirmasi kirim. ===== -->
 
-    <!-- ===== Floating Selection Toolbar (Cek Piutang -> Cetak Tagihan) ===== -->
-    <div class="selection-toolbar" id="ptSelectionToolbar">
-        <div class="sel-info"><i class="bi bi-check2-square"></i> <span class="sel-count" id="ptToolbarCount">0</span> faktur dipilih</div>
-        <button class="btn-sel-cancel" id="btnPtToolbarCancel">Batal</button>
-        <button class="btn-sel-send" id="btnPtToolbarSend">📤 Kirim ke Cetak Tagihan</button>
-    </div>
 
     <!-- ===== Modal Konfirmasi Custom (pengganti confirm()/prompt() bawaan) ===== -->
     <div class="confirm-modal-overlay" id="confirmModalOverlay">
@@ -3577,6 +3706,9 @@
                             <div class="action-inline" style="position: relative;">
                                 <button class="menu-toggle-btn" id="harianMenuBtn">⚙️ Menu <span style="font-size:8px;">▼</span></button>
                                 <div class="menu-dropdown" id="harianMenuDropdown">
+                                    <div class="menu-item">
+                                        <button class="btn btn-outline" id="btnInputManualHarian" style="flex:1;margin:0;"><i class="bi bi-pencil-square"></i> Input Manual</button>
+                                    </div>
                                     <div class="menu-item">
                                         <button class="btn btn-outline" id="btnMuatHarian" style="flex:1;margin:0;"><i class="bi bi-cloud-download"></i> Muat</button>
                                     </div>
@@ -4079,45 +4211,51 @@
     </div>
 
     <div class="modal-overlay" id="pgInputModal">
-        <div class="modal-box" style="max-width:1280px; width:96%;">
-            <div class="modal-head"><h2>➕ Input Transaksi Pengeluaran</h2><button class="modal-close" id="pgInputModalClose">✕</button></div>
-            <div class="modal-body">
+        <div class="modal-box im-modal-box">
+            <div class="modal-head im-modal-head">
+                <h2>✍️ Input Manual - Pengeluaran</h2>
+                <button class="modal-close" id="pgInputModalClose">✕</button>
+            </div>
+            <div class="modal-body im-modal-body">
                 <form id="pgInputForm">
-                    <div class="table-wrap pg-excel-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th rowspan="2">TANGGAL</th>
-                                    <th rowspan="2">KETERANGAN</th>
-                                    <th rowspan="2" class="num">MASUK</th>
-                                    <th colspan="3">PENGELUARAN HARIAN</th>
-                                    <th rowspan="2" class="num">SALDO</th>
-                                    <th rowspan="2">Aksi</th>
-                                </tr>
-                                <tr>
-                                    <th class="num">KANTOR</th>
-                                    <th class="num">BURUNG</th>
-                                    <th class="num">TOTAL</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="pg-col-tanggal"><input type="date" id="pgInTanggal" required style="width:100%;"></td>
-                                    <td><input type="text" id="pgInKeterangan" placeholder="mis. Uang Makan Karyawan, Bensin, Parkir..." required style="width:100%;"></td>
-                                    <td class="pg-col-masuk"><input type="number" id="pgInMasuk" min="0" step="1" placeholder="0" style="width:100%;text-align:right;"></td>
-                                    <td class="pg-col-kantor"><input type="number" id="pgInKantor" min="0" step="1" placeholder="0" style="width:100%;text-align:right;"></td>
-                                    <td class="pg-col-burung"><input type="number" id="pgInBurung" min="0" step="1" placeholder="0" style="width:100%;text-align:right;"></td>
-                                    <td class="num pg-col-total" style="color:#9ca3af;">auto</td>
-                                    <td class="num" style="color:#9ca3af;">auto</td>
-                                    <td class="pg-col-aksi"><button type="submit" class="btn btn-success" id="pgInBtnSimpan" style="padding:4px 10px;">💾</button></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="im-section">
+                        <div class="im-section-title">📋 Data Transaksi</div>
+                        <div class="im-grid">
+                            <div class="im-field">
+                                <label>Tanggal</label>
+                                <input type="date" id="pgInTanggal" required>
+                            </div>
+                            <div class="im-field">
+                                <label>Keterangan</label>
+                                <input type="text" id="pgInKeterangan" placeholder="mis. Uang Makan Karyawan, Bensin, Parkir..." required>
+                            </div>
+                            <div class="im-field im-span2">
+                                <label>Uang Masuk</label>
+                                <input type="text" id="pgInMasuk" class="im-uang" placeholder="0">
+                            </div>
+                        </div>
                     </div>
-                    <div style="font-size:10px; color:#9ca3af; margin-top:6px;">* Isi hanya salah satu kolom: Masuk (tambah saldo), Kantor, atau Burung. Kolom Total &amp; Saldo dihitung otomatis.</div>
+                    <div class="im-section">
+                        <div class="im-section-title">💸 Rincian Pengeluaran Harian</div>
+                        <div class="im-grid">
+                            <div class="im-field">
+                                <label>Kantor</label>
+                                <input type="text" id="pgInKantor" class="im-uang" placeholder="0">
+                            </div>
+                            <div class="im-field">
+                                <label>Burung</label>
+                                <input type="text" id="pgInBurung" class="im-uang" placeholder="0">
+                            </div>
+                        </div>
+                        <div style="font-size:10px; color:#9ca3af; margin-top:8px;">* Isi hanya salah satu kolom: Uang Masuk, Kantor, atau Burung. Kolom Total &amp; Saldo dihitung otomatis.</div>
+                    </div>
+                    <div class="im-total-box">
+                        <span>Total Transaksi</span>
+                        <strong id="pgInTotalPreview">Rp 0</strong>
+                    </div>
                 </form>
 
-                <div style="margin-top:16px;">
+                <div style="margin-top:4px;">
                     <div style="font-size:11px; font-weight:700; color:#374151; margin-bottom:4px;">Transaksi baru ditambahkan sesi ini:</div>
                     <div class="table-wrap pg-excel-wrap">
                         <table>
@@ -4126,6 +4264,10 @@
                         </table>
                     </div>
                 </div>
+            </div>
+            <div class="im-modal-footer">
+                <button type="button" class="btn btn-reset" id="pgInBatal">✖ Batal</button>
+                <button type="submit" form="pgInputForm" class="btn btn-success" id="pgInBtnSimpan">➕ Tambahkan ke Tabel</button>
             </div>
         </div>
     </div>
@@ -4162,6 +4304,112 @@
         <div class="modal-box">
             <div class="modal-head"><h2 id="ptDetailTitle">🧾 Detail Faktur</h2><button class="modal-close" id="ptDetailClose">✕</button></div>
             <div class="modal-body" id="ptDetailBody" style="font-size:11px; line-height:1.9;"></div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="ptSendConfirmModal">
+        <div class="modal-box" style="max-width:720px;">
+            <div class="modal-head"><h2>📤 Konfirmasi Kirim ke Cetak Tagihan</h2><button class="modal-close" id="ptSendConfirmClose">✕</button></div>
+            <div class="modal-body">
+                <div style="font-size:10.5px; color:#6b7280; margin-bottom:10px;">Berikut faktur yang akan dikirim ke <strong>Cetak Tagihan</strong>:</div>
+                <div class="faktur-table-wrapper" style="max-height:340px; overflow:auto; border:1px solid #e5e9ef; border-radius:8px;">
+                    <table>
+                        <thead>
+                            <tr><th class="center">No</th><th>No Faktur</th><th>Customer</th><th>Alamat</th><th>Sales</th><th>Jatuh Tempo</th><th class="num">Total Tagihan</th></tr>
+                        </thead>
+                        <tbody id="ptSendConfirmBody"><tr><td colspan="7" class="empty-msg">Tidak ada data.</td></tr></tbody>
+                    </table>
+                </div>
+                <div style="text-align:right; font-weight:700; font-size:11.5px; margin-top:8px;">Total: <span id="ptSendConfirmTotal">Rp 0</span> &middot; <span id="ptSendConfirmCount">0 faktur</span></div>
+                <div style="text-align:center; font-weight:700; font-size:12.5px; color:#c2410c; margin-top:16px; padding-top:12px; border-top:1px dashed #e5e9ef;">
+                    Serius Lanjut Ke Cetak Tagihan ini..? Klik Kirim ke Cetak
+                </div>
+                <div style="display:flex; justify-content:center; gap:10px; margin-top:14px;">
+                    <button type="button" class="btn btn-reset" id="ptSendConfirmBatal">✖ Batal</button>
+                    <button type="button" class="btn btn-success" id="ptSendConfirmKirim">📤 Kirim ke Cetak</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="harianInputManualModal">
+        <div class="modal-box im-modal-box">
+            <div class="modal-head im-modal-head">
+                <h2>✍️ Input Manual - Pembayaran</h2>
+                <button class="modal-close" id="imClose">✕</button>
+            </div>
+            <div class="im-target-toggle">
+                <button type="button" class="im-toggle-btn active" id="imTargetPiutang" data-target="piutang">💰 Piutang Tempo</button>
+                <button type="button" class="im-toggle-btn" id="imTargetCash" data-target="cash">💵 Cash Dropping</button>
+            </div>
+            <div class="modal-body im-modal-body">
+                <form id="imForm">
+                    <div class="im-section">
+                        <div class="im-section-title">📋 Data Faktur</div>
+                        <div class="im-grid">
+                            <div class="im-field">
+                                <label id="imLabelSales">Sales</label>
+                                <input type="text" id="imSales" placeholder="Nama sales...">
+                            </div>
+                            <div class="im-field">
+                                <label>No Faktur</label>
+                                <input type="text" id="imNoFaktur" placeholder="No faktur...">
+                            </div>
+                            <div class="im-field">
+                                <label>Nama Toko</label>
+                                <input type="text" id="imNamaToko" placeholder="Nama toko / customer...">
+                            </div>
+                            <div class="im-field">
+                                <label>Alamat</label>
+                                <input type="text" id="imAlamat" placeholder="Alamat...">
+                            </div>
+                            <div class="im-field">
+                                <label>Tgl Faktur</label>
+                                <input type="date" id="imTglFaktur">
+                            </div>
+                            <div class="im-field">
+                                <label>Jatuh Tempo</label>
+                                <input type="date" id="imJt">
+                            </div>
+                            <div class="im-field im-span2">
+                                <label id="imLabelTagihan">Tagihan / Nominal Faktur</label>
+                                <input type="text" id="imTagihan" class="im-uang" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="im-section">
+                        <div class="im-section-title">💳 Rincian Pembayaran</div>
+                        <div class="im-grid">
+                            <div class="im-field">
+                                <label>Minyak - Cash</label>
+                                <input type="text" id="imMinyakCash" class="im-uang" placeholder="0">
+                            </div>
+                            <div class="im-field">
+                                <label>Minyak - Transfer</label>
+                                <input type="text" id="imMinyakTransfer" class="im-uang" placeholder="0">
+                            </div>
+                            <div class="im-field">
+                                <label>Rupa-Rupa - Cash</label>
+                                <input type="text" id="imRupaCash" class="im-uang" placeholder="0">
+                            </div>
+                            <div class="im-field">
+                                <label>Rupa-Rupa - Transfer</label>
+                                <input type="text" id="imRupaTransfer" class="im-uang" placeholder="0">
+                            </div>
+                            <div class="im-field im-span2">
+                                <label>Keterangan</label>
+                                <input type="text" id="imKet" placeholder="Keterangan (opsional)...">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="im-total-box">
+                        <span>Total Pembayaran</span>
+                        <strong id="imTotalPreview">Rp 0</strong>
+                    </div>
+                </form>
+            </div>
+            <div class="im-modal-footer">
+                <button type="button" class="btn btn-reset" id="imBatal">✖ Batal</button>
+                <button type="button" class="btn btn-success" id="imSimpan">➕ Tambahkan ke Tabel</button>
+            </div>
         </div>
     </div>
     <div class="modal-overlay" id="ptInputManualModal">
@@ -7083,6 +7331,7 @@
                 const selectAll = document.getElementById('cashSelectAll');
                 if (selectAll) selectAll.checked = (allCbs.length > 0 && checkedCbs.length === allCbs.length);
                 updateCashSelectedInfo();
+                if (e.target.checked) sendSelectedToTab6();
             }
         });
 
@@ -7093,19 +7342,9 @@
                 cashChecked[cb.dataset.faktur] = checked;
             });
             updateCashSelectedInfo();
+            if (checked) sendSelectedToTab6();
         });
 
-        document.getElementById('btnCashToolbarSend').addEventListener('click', function() {
-            sendSelectedToTab6();
-        });
-
-        document.getElementById('btnCashToolbarCancel').addEventListener('click', function() {
-            cashChecked = {};
-            document.querySelectorAll('.cash-row-checkbox').forEach(cb => cb.checked = false);
-            const selectAll = document.getElementById('cashSelectAll');
-            if (selectAll) selectAll.checked = false;
-            updateCashSelectedInfo();
-        });
 
         // ================================================================
         // TAB 4 – CEK PIUTANG
@@ -7369,6 +7608,7 @@
                 const selectAll = document.getElementById('ptSelectAll');
                 if (selectAll) selectAll.checked = (allCbs.length > 0 && checkedCbs.length === allCbs.length);
                 updatePiutangSelectedInfo();
+                if (e.target.checked) sendSelectedToTab6();
             }
         });
 
@@ -7379,6 +7619,7 @@
                 ptChecked[cb.dataset.faktur] = checked;
             });
             updatePiutangSelectedInfo();
+            if (checked) sendSelectedToTab6();
         });
 
         document.getElementById('ptPrevPage').addEventListener('click', function() { if (ptPage > 1) { ptPage--;
@@ -7440,7 +7681,7 @@
                     </div>
                     <hr style="margin:8px 0; border:none; border-top:1px solid var(--line);">
                     <div><strong>Status:</strong> <span class="badge pt-${r.statusClass}">${ptStatusLabel(r.statusClass)}</span></div>
-                    <div><strong>Keterangan (dari Uang Masuk):</strong> ${r.statusClass === 'lunas' ? '<span class="stempel-lunas-lg">Lunas</span>' : (r.ketRaw || 'Belum ada catatan di Data Uang Masuk')}</div>
+                    <div><strong>Keterangan (dari Uang Masuk):</strong> ${r.statusClass === 'lunas' ? '<span class="stempel-lunas-lg">Lunas</span>' : (r.ketRaw ? r.ketRaw : '<span class="info-kosong-mencolok">Belum ada catatan di Data Uang Masuk</span>')}</div>
                     <hr style="margin:8px 0; border:none; border-top:1px solid var(--line);">
                     <div><strong>📝 Catatan Piutang:</strong></div>
                     <textarea id="ptCatatanInput" rows="3" style="width:100%; box-sizing:border-box; border:1px solid #d1d5db; border-radius:4px; padding:5px 8px; font-size:11px; font-family:inherit; resize:vertical; background:#fff; margin-top:4px;" placeholder="Tulis catatan untuk faktur ini (misal: janji bayar, alasan telat, dll)...">${escapeHtml(catatanTersimpan)}</textarea>
@@ -7619,12 +7860,15 @@
                         <div><strong>Total Dibayar:</strong> ${fmtRp(bayar.totalBayar)}</div>
                         <div><strong>Keterangan:</strong> ${escapeHtml(bayar.ket || '-')}</div>
                         </div>
-                        ` : `<div style="color:#b91c1c;">Belum ada data pembayaran yang cocok di Data Uang Masuk.</div>`}
+                        ` : `<div class="info-kosong-mencolok">Belum ada data pembayaran yang cocok di Data Uang Masuk</div>`}
                     </div>
                     <hr style="margin:8px 0; border:none; border-top:1px solid var(--line);">
                     <div><strong>📝 Catatan Cek Cash:</strong></div>
                     <textarea id="cashCatatanInput" rows="3" style="width:100%; box-sizing:border-box; border:1px solid #d1d5db; border-radius:4px; padding:5px 8px; font-size:11px; font-family:inherit; resize:vertical; background:#fff; margin-top:4px;" placeholder="Tulis catatan untuk faktur ini...">${escapeHtml(catatanTersimpan)}</textarea>
-                    <div style="text-align:right; margin-top:6px;"><button class="btn btn-outline" id="cashCatatanSaveBtn" style="font-size:10px;padding:4px 12px;">💾 Simpan Catatan</button></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:6px;">
+                        <button class="btn btn-danger" id="cashTrashBtn" style="font-size:10px;padding:4px 12px;">🗑️ Pindahkan ke Sampah</button>
+                        <button class="btn btn-outline" id="cashCatatanSaveBtn" style="font-size:10px;padding:4px 12px;">💾 Simpan Catatan</button>
+                    </div>
                     <hr style="margin:10px 0 8px; border:none; border-top:1px solid var(--line);">
                     <div style="background:#fff7ed; border:1px solid #fdba74; border-radius:6px; padding:8px 10px;">
                         <div style="font-size:10.5px; color:#7c2d12; margin-bottom:6px; line-height:1.5;">Kalau transaksi ini ternyata belum dibayar cash dan berubah jadi <strong>piutang (tempo)</strong>, pindahkan ke Cek Piutang di sini:</div>
@@ -7640,6 +7884,37 @@
                     await saveCashNote(cashCurrentDetailFaktur, val);
                     showToast('📝 Catatan disimpan.', 'success');
                     renderCashTable();
+                });
+            }
+            const trashBtn = document.getElementById('cashTrashBtn');
+            if (trashBtn) {
+                trashBtn.addEventListener('click', async () => {
+                    const idxList = [];
+                    salesData.forEach((row, i) => { if (normFaktur(row['No.Faktur']) === normFaktur(noFaktur)) idxList
+                            .push(i); });
+                    if (!idxList.length) {
+                        showToast('⚠️ Data asli tidak ditemukan di Bank Data Penjualan (mungkin sudah dipindahkan/dihapus).',
+                            'warning');
+                        return;
+                    }
+                    const alasan = prompt('Alasan pindahkan faktur ini ke Data Sampah:\n(contoh: Salah Input, Batal, Retur, dll)',
+                        'Batal / Tidak Jadi Tagih');
+                    if (alasan === null) return;
+                    if (!confirm(`Pindahkan faktur ${noFaktur} ke Data Sampah?\nData masih bisa dipulihkan kembali dari tab Trash & Save.`))
+                        return;
+
+                    await pindahkanSalesKeSampah(idxList, alasan.trim() || '-');
+
+                    delete cashChecked[noFaktur];
+                    delete ptChecked[noFaktur];
+
+                    document.getElementById('detailModalGlobal').classList.remove('show');
+                    rebuildSalesFilterOptions();
+                    await renderCek();
+                    if (typeof renderTrashTable === 'function') renderTrashTable();
+                    if (typeof renderRingkasanSaveAll === 'function') renderRingkasanSaveAll();
+                    if (typeof renderTagihanDariPiutang === 'function') renderTagihanDariPiutang();
+                    showToast(`🗑️ Faktur ${noFaktur} dipindahkan ke Data Sampah.`, 'success');
                 });
             }
             const ubahBtn = document.getElementById('cashUbahJadiPiutangBtn');
@@ -7948,29 +8223,59 @@
         // TOMBOL KIRIM KE CETAK (Tab 4 -> Tab 6)
         // ================================================================
         function sendSelectedToTab6() {
-            const selectedCount = Object.values(ptChecked).filter(v => v).length + Object.values(cashChecked)
-                .filter(v => v).length;
-            if (selectedCount === 0) {
+            const piutangRows = ptBuildTempoRows().filter(r => ptChecked[r.noFaktur] === true).map(r => ({ ...r, tipe: 'piutang' }));
+            const cashRows = buildCashTagihanRows();
+            const selectedRows = [...piutangRows, ...cashRows];
+
+            if (selectedRows.length === 0) {
                 showToast('⚠️ Pilih minimal 1 faktur di Tab 4 (Cek Piutang) atau Tab 3 (Cek Cash) terlebih dahulu!',
                     'warning');
                 return;
             }
-            renderTagihanDariPiutang();
-            showToast(`✅ ${selectedCount} faktur berhasil dikirim ke Cetak Tagihan!`, 'success');
-            switchTab('tab6');
+
+            let total = 0;
+            let html = '';
+            selectedRows.forEach((r, i) => {
+                const nominal = parseNumber(r.total);
+                total += nominal;
+                html += `<tr>
+                            <td class="center">${i+1}</td>
+                            <td>${r.noFaktur || ''}</td>
+                            <td>${r.customer || ''}</td>
+                            <td>${r.alamat || ''}</td>
+                            <td>${r.sales || ''}</td>
+                            <td>${r.jt || '-'}</td>
+                            <td class="num">${fmtRp(nominal)}</td>
+                        </tr>`;
+            });
+
+            document.getElementById('ptSendConfirmBody').innerHTML = html;
+            document.getElementById('ptSendConfirmTotal').textContent = fmtRp(total);
+            document.getElementById('ptSendConfirmCount').textContent = selectedRows.length + ' faktur';
+            document.getElementById('ptSendConfirmModal').classList.add('show');
         }
 
-        document.getElementById('btnPtToolbarSend').addEventListener('click', function() {
-            sendSelectedToTab6();
+        function ptSendConfirmBatalkan() {
+            document.getElementById('ptSendConfirmModal').classList.remove('show');
+            // Catatan: status centang SENGAJA tidak dikosongkan di sini, supaya faktur yang
+            // sudah pernah dikirim ke Cetak Tagihan tidak hilang saat user membatalkan/menutup
+            // modal ini untuk faktur lain yang baru dicentang.
+        }
+        document.getElementById('ptSendConfirmClose').addEventListener('click', ptSendConfirmBatalkan);
+        document.getElementById('ptSendConfirmBatal').addEventListener('click', ptSendConfirmBatalkan);
+        document.getElementById('ptSendConfirmKirim').addEventListener('click', function() {
+            document.getElementById('ptSendConfirmModal').classList.remove('show');
+            const selectedCount = Object.values(ptChecked).filter(v => v).length + Object.values(cashChecked)
+                .filter(v => v).length;
+
+            switchTab('tab6'); // switchTab sudah otomatis memanggil renderTagihanDariPiutang() dengan data centang saat ini
+            showToast(`✅ ${selectedCount} faktur berhasil dikirim ke Cetak Tagihan!`, 'success');
+
+            // Status centang SENGAJA dibiarkan tetap (tidak direset) supaya kalau nanti
+            // kembali ke Cek Piutang/Cek Cash untuk menambah faktur lain, faktur yang sudah
+            // terkirim sebelumnya tetap ada di Cetak Tagihan (tidak hilang).
         });
 
-        document.getElementById('btnPtToolbarCancel').addEventListener('click', function() {
-            ptChecked = {};
-            document.querySelectorAll('.pt-row-checkbox').forEach(cb => cb.checked = false);
-            const selectAll = document.getElementById('ptSelectAll');
-            if (selectAll) selectAll.checked = false;
-            updatePiutangSelectedInfo();
-        });
 
         document.getElementById('tagihanBtnRefresh').addEventListener('click', function() {
             renderTagihanDariPiutang();
@@ -8631,6 +8936,111 @@
             hitungRingkasan();
             tandaiInputHarianBerubah();
         }
+
+        // ================================================================
+        // MODAL INPUT MANUAL (TAB PEMBAYARAN)
+        // ================================================================
+        let imTarget = 'piutang';
+
+        function imHitungTotalPreview() {
+            const total = parseAngka(document.getElementById('imMinyakCash').value) +
+                parseAngka(document.getElementById('imMinyakTransfer').value) +
+                parseAngka(document.getElementById('imRupaCash').value) +
+                parseAngka(document.getElementById('imRupaTransfer').value);
+            document.getElementById('imTotalPreview').textContent = 'Rp ' + formatAngka(total);
+            return total;
+        }
+
+        function imSetTarget(target) {
+            imTarget = target;
+            document.getElementById('imTargetPiutang').classList.toggle('active', target === 'piutang');
+            document.getElementById('imTargetCash').classList.toggle('active', target === 'cash');
+            document.getElementById('imLabelSales').textContent = target === 'piutang' ? 'Sales' : 'Dropping/Sales';
+            document.getElementById('imLabelTagihan').textContent = target === 'piutang' ? 'Tagihan' :
+                'Nominal Faktur';
+        }
+
+        function imResetForm() {
+            document.getElementById('imForm').reset();
+            document.getElementById('imTglFaktur').value = document.getElementById('tanggalHarian').value || '';
+            imHitungTotalPreview();
+        }
+
+        function imOpenModal() {
+            imResetForm();
+            imSetTarget('piutang');
+            document.getElementById('harianInputManualModal').classList.add('show');
+            document.getElementById('imNoFaktur').focus();
+        }
+
+        function imCloseModal() {
+            document.getElementById('harianInputManualModal').classList.remove('show');
+        }
+
+        document.getElementById('btnInputManualHarian').addEventListener('click', function() {
+            document.getElementById('harianMenuDropdown').classList.remove('active');
+            imOpenModal();
+        });
+        document.getElementById('imClose').addEventListener('click', imCloseModal);
+        document.getElementById('imBatal').addEventListener('click', imCloseModal);
+        document.getElementById('imTargetPiutang').addEventListener('click', function() {
+            imSetTarget('piutang');
+        });
+        document.getElementById('imTargetCash').addEventListener('click', function() {
+            imSetTarget('cash');
+        });
+        ['imMinyakCash', 'imMinyakTransfer', 'imRupaCash', 'imRupaTransfer'].forEach(function(id) {
+            document.getElementById(id).addEventListener('input', imHitungTotalPreview);
+        });
+
+        document.getElementById('imSimpan').addEventListener('click', function() {
+            const noFaktur = document.getElementById('imNoFaktur').value.trim();
+            const namaToko = document.getElementById('imNamaToko').value.trim();
+            if (!noFaktur && !namaToko) {
+                showToast('⚠️ Isi minimal No Faktur atau Nama Toko dulu.', 'warning');
+                return;
+            }
+
+            const tbodyId = imTarget === 'piutang' ? 'piutangInputBody' : 'cashInputBody';
+            const tbody = document.getElementById(tbodyId);
+            const count = tbody.querySelectorAll('tr:not(.group-subtotal):not(.row-spacer)').length + 1;
+            const tr = imTarget === 'piutang' ? buatBarisPiutang(count) : buatBarisCash(count);
+            tbody.appendChild(tr);
+
+            const inputs = tr.querySelectorAll('input');
+            // Urutan: 0 sales, 1 no_faktur, 2 nama_toko, 3 alamat, 4 tgl_faktur, 5 jt,
+            // 6 tagihan, 7 minyak_cash, 8 minyak_transfer, 9 rupa_cash, 10 rupa_transfer, 11 ket
+            inputs[0].value = document.getElementById('imSales').value.trim();
+            inputs[1].value = noFaktur;
+            inputs[2].value = namaToko;
+            inputs[3].value = document.getElementById('imAlamat').value.trim();
+            inputs[4].value = document.getElementById('imTglFaktur').value;
+            inputs[5].value = document.getElementById('imJt').value;
+            inputs[6].value = formatAngka(parseAngka(document.getElementById('imTagihan').value));
+            inputs[7].value = formatAngka(parseAngka(document.getElementById('imMinyakCash').value));
+            inputs[8].value = formatAngka(parseAngka(document.getElementById('imMinyakTransfer').value));
+            inputs[9].value = formatAngka(parseAngka(document.getElementById('imRupaCash').value));
+            inputs[10].value = formatAngka(parseAngka(document.getElementById('imRupaTransfer').value));
+            inputs[11].value = document.getElementById('imKet').value.trim();
+            hitungTotalBaris(tr);
+
+            if (imTarget === 'piutang') {
+                hitungTotalKolom('piutangInputBody', 'piutangTotalMinyakCash', 'piutangTotalMinyakTransfer',
+                    'piutangTotalRupaCash', 'piutangTotalRupaTransfer', 'piutangTotalGrand');
+                rebuildGroupTotals('piutangInputBody');
+            } else {
+                hitungTotalKolom('cashInputBody', 'cashTotalMinyakCash', 'cashTotalMinyakTransfer',
+                    'cashTotalRupaCash', 'cashTotalRupaTransfer', 'cashTotalGrand');
+                rebuildGroupTotals('cashInputBody');
+            }
+            hitungRingkasan();
+            tandaiInputHarianBerubah();
+
+            tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            showToast(`✅ Baris ${imTarget === 'piutang' ? 'Piutang Tempo' : 'Cash Dropping'} berhasil ditambahkan.`,
+                'success');
+            imCloseModal();
+        });
 
         async function simpanDataHarian(silent) {
             const tgl = document.getElementById('tanggalHarian').value;
@@ -10057,13 +10467,13 @@
                 totalJual += totalBaris;
                 if (hargaBeli !== null) totalBeli += hargaBeli * jumlah;
                 if (profitBaris !== null) totalProfit += profitBaris;
-                return `<tr data-gidx="${gidx}" data-disc="${disc}">
+                return `<tr data-gidx="${gidx}">
                         <td style="padding:3px 4px;"><input type="text" class="tab1e-produk" list="produkMasterDatalist" value="${escapeHtml(it.Produk || '')}" style="width:100%;min-width:110px;box-sizing:border-box;padding:3px 4px;border:1px solid #cbd5e1;border-radius:3px;font-size:10.5px;"></td>
                         <td class="num" style="padding:3px 4px;"><input type="number" class="tab1e-qty num" value="${jumlah || 0}" style="width:100%;box-sizing:border-box;text-align:right;padding:3px 4px;border:1px solid #cbd5e1;border-radius:3px;font-size:10.5px;"></td>
                         <td class="num" style="padding:3px 4px;"><input type="number" class="tab1e-hargabeli num" value="${hargaBeli !== null ? hargaBeli : ''}" placeholder="-" style="width:100%;box-sizing:border-box;text-align:right;padding:3px 4px;border:1px solid #cbd5e1;border-radius:3px;font-size:10.5px;"></td>
                         <td class="num" style="padding:3px 4px;"><input type="number" class="tab1e-hargajual num" value="${hargaJual || 0}" style="width:100%;box-sizing:border-box;text-align:right;padding:3px 4px;border:1px solid #cbd5e1;border-radius:3px;font-size:10.5px;"></td>
+                        <td class="num" style="padding:3px 4px;"><input type="number" class="tab1e-disc num" value="${disc || 0}" style="width:100%;box-sizing:border-box;text-align:right;padding:3px 4px;border:1px solid #cbd5e1;border-radius:3px;font-size:10.5px;"></td>
                         <td class="num tab1e-total" style="font-weight:600;padding:3px 4px;">${fmtRp(totalBaris)}</td>
-                        <td class="num tab1e-profit" style="color:${profitBaris !== null && profitBaris < 0 ? '#b91c1c' : '#15803d'};font-weight:700;padding:3px 4px;">${profitBaris !== null ? fmtRp(profitBaris) : '-'}</td>
                     </tr>`;
             }).join('');
 
@@ -10094,15 +10504,15 @@
                         </div>
                     </div>
                     <hr style="margin:8px 0; border:none; border-top:1px solid var(--line);">
-                    <div style="font-size:11px;font-weight:700;margin-bottom:4px;">📦 Rincian Item <span style="font-weight:400;color:#6b7280;">(bisa diedit — Produk, Qty, Harga Beli, Harga Jual. Total &amp; Profit otomatis terisi)</span></div>
+                    <div style="font-size:11px;font-weight:700;margin-bottom:4px;">📦 Rincian Item <span style="font-weight:400;color:#6b7280;">(bisa diedit — Produk, Qty, Harga Beli, Harga Jual, Disc. Total otomatis terisi)</span></div>
                     <table id="tab1EditFakturTable" style="width:100%; table-layout:fixed; border-collapse:collapse; font-size:10.5px;">
                         <colgroup>
                             <col style="width:auto;">
                             <col style="width:60px;">
                             <col style="width:100px;">
                             <col style="width:100px;">
+                            <col style="width:90px;">
                             <col style="width:110px;">
-                            <col style="width:100px;">
                         </colgroup>
                         <thead>
                             <tr style="border-bottom:1px solid var(--line);">
@@ -10110,8 +10520,8 @@
                                 <th style="text-align:right;padding:3px 4px;">Qty</th>
                                 <th style="text-align:right;padding:3px 4px;">Harga Beli</th>
                                 <th style="text-align:right;padding:3px 4px;">Harga Jual</th>
+                                <th style="text-align:right;padding:3px 4px;">Disc</th>
                                 <th style="text-align:right;padding:3px 4px;">Total</th>
-                                <th style="text-align:right;padding:3px 4px;">Profit</th>
                             </tr>
                         </thead>
                         <tbody>${baris}</tbody>
@@ -10121,16 +10531,11 @@
                                 <td class="num" style="padding:3px 4px;" id="tab1EditTotalQty">${totalQty}</td>
                                 <td class="num" style="padding:3px 4px;"></td>
                                 <td class="num" style="padding:3px 4px;"></td>
+                                <td class="num" style="padding:3px 4px;"></td>
                                 <td class="num" style="padding:3px 4px;" id="tab1EditTotalJual">${fmtRp(totalJual)}</td>
-                                <td class="num" style="padding:3px 4px;color:${totalProfit < 0 ? '#b91c1c' : '#15803d'};" id="tab1EditTotalProfit">${adaHargaBeli ? fmtRp(totalProfit) : '-'}</td>
                             </tr>
                         </tfoot>
                     </table>
-                    <div style="font-size:11px; line-height:1.8; margin-top:8px;">
-                        <div><strong>💰 Total Profit Faktur:</strong> <span id="tab1EditProfitFaktur" style="color:${totalProfit < 0 ? '#b91c1c' : '#15803d'};font-weight:700;">${adaHargaBeli ? fmtRp(totalProfit) : 'Harga Beli belum diisi'}</span></div>
-                        ${marginPct !== null ? `<div id="tab1EditMarginWrap"><strong>📊 Margin:</strong> <span id="tab1EditMargin">${marginPct}</span>%</div>` : `<div id="tab1EditMarginWrap" style="display:none;"><strong>📊 Margin:</strong> <span id="tab1EditMargin">0</span>%</div>`}
-                        <div style="color:#b45309;" id="tab1EditWarnHargaBeli" ${adaHargaBeli ? 'hidden' : ''}>⚠️ Kolom "Harga Beli" belum terisi untuk sebagian/semua item, sehingga Profit belum bisa dihitung penuh.</div>
-                    </div>
                     <hr style="margin:10px 0; border:none; border-top:1px solid var(--line);">
                     <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
                         <button type="button" id="tab1BtnTransaksiBatal" class="btn btn-danger" style="font-size:11px;padding:6px 14px;" data-faktur="${escapeHtml(noFaktur)}">❌ Transaksi Batal</button>
@@ -10145,17 +10550,11 @@
         // Hitung ulang Total & Profit per baris (live) setiap kali user mengetik
         // di kolom Qty/Harga Beli/Harga Jual pada modal edit faktur Tab 1.
         function tab1HitungUlangBarisEdit(tr) {
-            const disc = parseNumber(tr.dataset.disc || 0);
             const qty = parseAngka(tr.querySelector('.tab1e-qty').value);
-            const hargaBeliRaw = tr.querySelector('.tab1e-hargabeli').value;
-            const hargaBeli = hargaBeliRaw === '' ? null : parseAngka(hargaBeliRaw);
             const hargaJual = parseAngka(tr.querySelector('.tab1e-hargajual').value);
+            const disc = parseAngka(tr.querySelector('.tab1e-disc').value);
             const total = (qty * hargaJual) - disc;
-            const profit = hargaBeli !== null ? (total - (hargaBeli * qty)) : null;
             tr.querySelector('.tab1e-total').textContent = fmtRp(total);
-            const profitEl = tr.querySelector('.tab1e-profit');
-            profitEl.textContent = profit !== null ? fmtRp(profit) : '-';
-            profitEl.style.color = (profit !== null && profit < 0) ? '#b91c1c' : '#15803d';
             tab1HitungUlangTotalKeseluruhanEdit();
         }
 
@@ -10163,38 +10562,17 @@
             const table = document.getElementById('tab1EditFakturTable');
             if (!table) return;
             let totalQty = 0,
-                totalJual = 0,
-                totalProfit = 0,
-                adaHargaBeli = false;
+                totalJual = 0;
             table.querySelectorAll('tbody tr').forEach(tr => {
-                const disc = parseNumber(tr.dataset.disc || 0);
                 const qty = parseAngka(tr.querySelector('.tab1e-qty').value);
-                const hargaBeliRaw = tr.querySelector('.tab1e-hargabeli').value;
-                const hargaBeli = hargaBeliRaw === '' ? null : parseAngka(hargaBeliRaw);
                 const hargaJual = parseAngka(tr.querySelector('.tab1e-hargajual').value);
+                const disc = parseAngka(tr.querySelector('.tab1e-disc').value);
                 const total = (qty * hargaJual) - disc;
                 totalQty += qty;
                 totalJual += total;
-                if (hargaBeli !== null) { adaHargaBeli = true;
-                    totalProfit += (total - (hargaBeli * qty)); }
             });
             document.getElementById('tab1EditTotalQty').textContent = totalQty;
             document.getElementById('tab1EditTotalJual').textContent = fmtRp(totalJual);
-            document.getElementById('tab1EditTotalProfit').textContent = adaHargaBeli ? fmtRp(totalProfit) : '-';
-            document.getElementById('tab1EditProfitFaktur').textContent = adaHargaBeli ? fmtRp(totalProfit) :
-                'Harga Beli belum diisi';
-            document.getElementById('tab1EditProfitFaktur').style.color = (adaHargaBeli && totalProfit < 0) ?
-                '#b91c1c' : '#15803d';
-            const marginWrap = document.getElementById('tab1EditMarginWrap');
-            const warn = document.getElementById('tab1EditWarnHargaBeli');
-            if (adaHargaBeli && totalJual > 0) {
-                marginWrap.style.display = '';
-                document.getElementById('tab1EditMargin').textContent = ((totalProfit / totalJual) * 100).toFixed(1);
-                warn.hidden = true;
-            } else {
-                marginWrap.style.display = 'none';
-                warn.hidden = false;
-            }
         }
 
         // ================================================================
@@ -10348,9 +10726,8 @@
                             if (!h) return;
                             const beliInp = tr.querySelector('.tab1e-hargabeli');
                             const jualInp = tr.querySelector('.tab1e-hargajual');
-                            if (beliInp && !beliInp.value && h.hargaBeli !== '') beliInp.value = h.hargaBeli;
-                            if (jualInp && (!jualInp.value || jualInp.value === '0') && h.hargaJual !== '')
-                                jualInp.value = h.hargaJual;
+                            if (beliInp && h.hargaBeli !== '') beliInp.value = h.hargaBeli;
+                            if (jualInp && h.hargaJual !== '') jualInp.value = h.hargaJual;
                             tab1HitungUlangBarisEdit(tr);
                         });
                     }
@@ -10375,19 +10752,20 @@
                 const gidx = parseInt(tr.dataset.gidx, 10);
                 const row = salesData[gidx];
                 if (!row) return;
-                const disc = parseNumber(tr.dataset.disc || 0);
+                const discBaru = parseAngka(tr.querySelector('.tab1e-disc').value);
                 const produkBaru = tr.querySelector('.tab1e-produk').value.trim();
                 const qtyBaru = parseAngka(tr.querySelector('.tab1e-qty').value);
                 const hargaBeliRaw = tr.querySelector('.tab1e-hargabeli').value;
                 const hargaBeliBaru = hargaBeliRaw === '' ? '' : parseAngka(hargaBeliRaw);
                 const hargaJualBaru = parseAngka(tr.querySelector('.tab1e-hargajual').value);
-                const totalBaru = (qtyBaru * hargaJualBaru) - disc;
+                const totalBaru = (qtyBaru * hargaJualBaru) - discBaru;
                 const profitBaru = hargaBeliRaw === '' ? '' : (totalBaru - (hargaBeliBaru * qtyBaru));
 
                 row.Produk = produkBaru;
                 row.Jumlah = qtyBaru;
                 row['Harga Beli'] = hargaBeliBaru;
                 row['Harga Jual'] = hargaJualBaru;
+                row.Disc = discBaru;
                 row.Total = totalBaru;
                 row.Profit = profitBaru;
                 row.Pembayaran = pembayaranBaru;
@@ -10965,6 +11343,18 @@
             if (body) body.innerHTML = '<tr><td colspan="5" class="empty-msg">Belum ada transaksi ditambahkan di sesi ini.</td></tr>';
         }
 
+        function pgHitungTotalPreview() {
+            const total = parseNumber(document.getElementById('pgInMasuk').value) +
+                parseNumber(document.getElementById('pgInKantor').value) +
+                parseNumber(document.getElementById('pgInBurung').value);
+            document.getElementById('pgInTotalPreview').textContent = 'Rp ' + formatAngka(total);
+            return total;
+        }
+
+        ['pgInMasuk', 'pgInKantor', 'pgInBurung'].forEach(function(id) {
+            document.getElementById(id).addEventListener('input', pgHitungTotalPreview);
+        });
+
         function pgBukaInputModal() {
             pgResetSesiInput();
             const tglInput = document.getElementById('pgInTanggal');
@@ -10973,6 +11363,7 @@
             document.getElementById('pgInMasuk').value = '';
             document.getElementById('pgInKantor').value = '';
             document.getElementById('pgInBurung').value = '';
+            pgHitungTotalPreview();
             document.getElementById('pgInputModal').classList.add('show');
             document.getElementById('pgInKeterangan').focus();
         }
@@ -10983,6 +11374,7 @@
 
         document.getElementById('pgBukaInputModalBtn').addEventListener('click', pgBukaInputModal);
         document.getElementById('pgInputModalClose').addEventListener('click', pgTutupInputModal);
+        document.getElementById('pgInBatal').addEventListener('click', pgTutupInputModal);
         document.getElementById('pgInputModal').addEventListener('click', function(e) {
             if (e.target === this) pgTutupInputModal();
         });
@@ -11041,6 +11433,7 @@
             document.getElementById('pgInKantor').value = '';
             document.getElementById('pgInBurung').value = '';
             document.getElementById('pgInTanggal').value = tanggal;
+            pgHitungTotalPreview();
             document.getElementById('pgInKeterangan').focus();
             showToast('✅ Transaksi tersimpan.', 'success');
         });
