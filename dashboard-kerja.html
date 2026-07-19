@@ -3567,6 +3567,7 @@
                         <th>Alamat</th>
                         <th>Sales</th>
                         <th>Kategori</th>
+                        <th>Produk</th>
                         <th class="num">Total Tagihan</th>
                         <th>Jatuh Tempo</th>
                         <th>Status</th>
@@ -3576,7 +3577,7 @@
                         <th>Keterangan</th>
                     </tr>
                 </thead>
-                <tbody id="ptTbody"><tr><td colspan="14" class="empty-msg">📂 Belum ada data piutang tempo.</td></tr></tbody>
+                <tbody id="ptTbody"><tr><td colspan="15" class="empty-msg">📂 Belum ada data piutang tempo.</td></tr></tbody>
             </table>
         </div>
         <div class="pagination">
@@ -7553,7 +7554,7 @@
             const pageRows = rows.slice(start, end);
 
             if (pageRows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="14" class="empty-msg">📂 Belum ada data piutang tempo.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="15" class="empty-msg">📂 Belum ada data piutang tempo.</td></tr>';
             } else {
                 tbody.innerHTML = pageRows.map((r, i) => {
                     const realIdx = start + i;
@@ -7566,6 +7567,7 @@
                                 <td>${r.alamat||''}</td>
                                 <td>${r.sales||''}</td>
                                 <td><span class="badge pt-tercatat">${r.kategori==='fitri' ? 'Minyak Fitri' : 'Rupa Rupa'}</span></td>
+                                <td>${r.produkNama||'-'}</td>
                                 <td class="num">${fmtRp(r.total)}</td>
                                 <td>${r.jt || '-'}${r.overdueDays!=null ? ` <span style="color:#b91c1c;font-weight:700;">(${r.overdueDays} hr)</span>` : ''}</td>
                                 <td><span class="badge pt-${r.statusClass}">${r.statusClass==='overdue' && r.overdueDays!=null ? `${r.overdueDays} hr/Overdue` : ptStatusLabel(r.statusClass)}</span></td>
