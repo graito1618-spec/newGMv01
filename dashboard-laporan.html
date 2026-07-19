@@ -2,7 +2,8 @@
 <html lang="id"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>GAJAH MAS 2026 - Dashboard Laporan</title>
+    <title>GAMAS 2026 - Dashboard Laporan</title>
+    <meta name="robots" content="noindex, nofollow">
     <script>
         // Cek mode PWA dan hide header SEBELUM render
         if (window.matchMedia('(display-mode: standalone)').matches || 
@@ -3145,7 +3146,7 @@
     </div>
     <header class="app-header">
         <div class="logo">
-            <h1>📊 GAJAH MAS 2026</h1>
+            <h1>📊 GAMAS 2026</h1>
             <span class="sub">Laporan</span>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
@@ -9227,7 +9228,7 @@
                 });
 
                 const backup = {
-                    app: 'GAJAH MAS 2026 - All in One',
+                    app: 'GAMAS 2026 - All in One',
                     backupVersion: 2,
                     exportedAt: new Date().toISOString(),
                     data: { sales, cashIncome, printHistory, inputHarian, trash, piutangNotes, cashNotes, cetakTagihan }
@@ -10544,7 +10545,7 @@
                 switchTab('tab2');
                 scheduleFitTableWraps();
 
-                console.log('✅ GAJAH MAS 2026 FINAL — Semua tab berfungsi.');
+                console.log('✅ GAMAS 2026 FINAL — Semua tab berfungsi.');
             } catch (err) {
                 console.error('Gagal inisialisasi database/aplikasi:', err);
                 showToast('❌ Gagal membuka database: ' + err.message + ' — lihat peringatan di atas.', 'warning');
@@ -10573,7 +10574,7 @@
         // LOGOUT
         // ================================================================
         async function handleLogoutClick() {
-            if (!confirm('Yakin mau logout dari GAJAH MAS 2026?')) return;
+            if (!confirm('Yakin mau logout dari GAMAS 2026?')) return;
             try {
                 await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
             } catch (e) { /* tetap lanjut reload walau request gagal, biar UI konsisten */ }
@@ -10615,7 +10616,7 @@
     <div id="authOverlay" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(31,78,120,0.92); align-items:center; justify-content:center; font-family:inherit;">
         <form id="authForm" onsubmit="handleAuthSubmit(event)" style="background:#fff; border-radius:12px; padding:32px 28px; width:90%; max-width:360px; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
             <input type="hidden" id="authMode" value="login">
-            <h2 id="authTitle" style="margin:0 0 6px; color:#1f4e78; font-size:20px;">🔒 Masuk ke GAJAH MAS 2026</h2>
+            <h2 id="authTitle" style="margin:0 0 6px; color:#1f4e78; font-size:20px;">🔒 Masuk ke GAMAS 2026</h2>
             <p style="margin:0 0 18px; color:#555; font-size:13px;">Login diperlukan supaya data hanya bisa diakses oleh tim kamu.</p>
             <label style="display:block; font-size:13px; margin-bottom:4px; color:#333;">Username</label>
             <input id="authUsername" type="text" autocomplete="username" required style="width:100%; padding:10px; margin-bottom:12px; border:1px solid #ccc; border-radius:6px; font-size:14px; box-sizing:border-box;">
