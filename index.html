@@ -216,6 +216,88 @@
       box-shadow: 0 0 25px rgba(0, 245, 255, 0.6);
     }
 
+    /* PIN GATE MODAL */
+    .pin-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(5, 8, 15, 0.85);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .pin-overlay.aktif { display: flex; }
+
+    .pin-box {
+      width: 300px;
+      max-width: 88vw;
+      padding: 32px 28px;
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(0, 245, 255, 0.3);
+      box-shadow: 0 0 60px rgba(0, 245, 255, 0.15);
+      text-align: center;
+    }
+    .pin-box h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      margin-bottom: 6px;
+      color: #e0f2fe;
+    }
+    .pin-box p {
+      font-size: 12.5px;
+      color: #94a3b8;
+      margin-bottom: 18px;
+    }
+    .pin-input {
+      width: 100%;
+      padding: 12px;
+      font-size: 22px;
+      letter-spacing: 10px;
+      text-align: center;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 245, 255, 0.35);
+      background: rgba(255,255,255,0.05);
+      color: #67e8f9;
+      outline: none;
+      margin-bottom: 10px;
+    }
+    .pin-input:focus { border-color: var(--primary); }
+    .pin-error {
+      font-size: 12px;
+      color: #ff6b6b;
+      min-height: 16px;
+      margin-bottom: 8px;
+    }
+    .pin-box.shake { animation: shakePin 0.4s; }
+    @keyframes shakePin {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .pin-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .pin-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid rgba(0, 245, 255, 0.4);
+      background: rgba(0, 245, 255, 0.1);
+      color: #e0f2fe;
+      transition: all 0.3s;
+    }
+    .pin-btn.utama {
+      background: var(--primary);
+      color: #05080f;
+    }
+    .pin-btn:hover { box-shadow: 0 0 20px rgba(0, 245, 255, 0.4); }
+
     /* FOOTER CREDIT - Dipercerah */
     .footer-credit {
       position: fixed;
@@ -284,6 +366,20 @@
     by Hamung 2026
   </div>
 
+  <!-- PIN GATE -->
+  <div class="pin-overlay" id="pinOverlay">
+    <div class="pin-box" id="pinBox">
+      <h3>🔒 Masuk Module</h3>
+      <p>Masukkan PIN untuk mengakses dashboard</p>
+      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" class="pin-input" id="pinInput" placeholder="••••" autocomplete="off" />
+      <div class="pin-error" id="pinError">&nbsp;</div>
+      <div class="pin-actions">
+        <button class="pin-btn" id="pinBatal">Batal</button>
+        <button class="pin-btn utama" id="pinMasuk">Masuk</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     document.querySelectorAll('.kartu').forEach(card => {
       card.addEventListener('mousemove', (e) => {
@@ -293,6 +389,74 @@
         card.style.setProperty('--mx', `${x}%`);
         card.style.setProperty('--my', `${y}%`);
       });
+    });
+
+    // ================================================================
+    // GERBANG PIN — wajib masukkan PIN sebelum bisa membuka module apa
+    // pun. Sekali PIN benar, tidak perlu diulang selama TAB browser ini
+    // masih terbuka (tersimpan di sessionStorage, hilang kalau tab
+    // ditutup/browser ditutup, supaya tetap aman di perangkat bersama).
+    // ================================================================
+    const PIN_RAHASIA = '1618';
+    const PIN_SESSION_KEY = 'gamasPinOk';
+
+    const pinOverlay = document.getElementById('pinOverlay');
+    const pinBox = document.getElementById('pinBox');
+    const pinInput = document.getElementById('pinInput');
+    const pinError = document.getElementById('pinError');
+    const pinMasuk = document.getElementById('pinMasuk');
+    const pinBatal = document.getElementById('pinBatal');
+
+    let tujuanSetelahPin = null;
+
+    function sudahUnlock() {
+      return sessionStorage.getItem(PIN_SESSION_KEY) === '1';
+    }
+
+    function bukaPinOverlay(hrefTujuan) {
+      tujuanSetelahPin = hrefTujuan;
+      pinError.textContent = '\u00a0';
+      pinInput.value = '';
+      pinOverlay.classList.add('aktif');
+      setTimeout(() => pinInput.focus(), 50);
+    }
+
+    function tutupPinOverlay() {
+      pinOverlay.classList.remove('aktif');
+      tujuanSetelahPin = null;
+    }
+
+    function cobaMasuk() {
+      if (pinInput.value === PIN_RAHASIA) {
+        sessionStorage.setItem(PIN_SESSION_KEY, '1');
+        const tujuan = tujuanSetelahPin;
+        tutupPinOverlay();
+        if (tujuan) window.location.href = tujuan;
+      } else {
+        pinError.textContent = '❌ PIN salah, coba lagi.';
+        pinInput.value = '';
+        pinInput.focus();
+        pinBox.classList.remove('shake');
+        void pinBox.offsetWidth; // reset animasi
+        pinBox.classList.add('shake');
+      }
+    }
+
+    document.querySelectorAll('.kartu').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (sudahUnlock()) return; // sudah pernah masuk PIN di sesi ini, biarkan lanjut normal
+        e.preventDefault();
+        bukaPinOverlay(card.getAttribute('href'));
+      });
+    });
+
+    pinMasuk.addEventListener('click', cobaMasuk);
+    pinBatal.addEventListener('click', tutupPinOverlay);
+    pinInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') cobaMasuk();
+    });
+    pinOverlay.addEventListener('click', (e) => {
+      if (e.target === pinOverlay) tutupPinOverlay();
     });
   </script>
 </body>
