@@ -4948,13 +4948,51 @@
 
         // Ubah error Firestore mentah jadi pesan yang mudah dipahami pengguna.
         function pesanErrorFirestore(e, konteks) {
+            // Cache IndexedDB korup ("Target ID already exists") -> coba pulihkan
+            // otomatis (hapus cache + reload sekali). Dipanggil tanpa await karena
+            // pesanErrorFirestore dipakai secara sync; reload akan terjadi begitu
+            // proses async-nya selesai.
+            pulihkanDariTargetIdError(e);
             const kode = e && e.code ? e.code : '';
             let sebab = e && e.message ? e.message : String(e);
             if (kode === 'permission-denied') sebab = 'Akses ditolak (cek Firestore Security Rules di Firebase Console).';
             else if (kode === 'unavailable') sebab = 'Tidak bisa menghubungi server (cek koneksi internet).';
             else if (kode === 'unauthenticated') sebab = 'Sesi tidak terautentikasi.';
+            else if (/Target ID already exists/i.test(sebab)) sebab = 'Cache lokal browser rusak, sedang dipulihkan otomatis (halaman akan reload)...';
             return 'Gagal ' + konteks + ': ' + sebab;
         }
+
+        // Auto-recovery: kalau cache IndexedDB Firestore di browser korup, semua
+        // operasi Firestore gagal terus dengan error "Target ID already exists".
+        // Fungsi ini menghapus database IndexedDB Firestore lalu reload sekali
+        // (pakai flag di sessionStorage biar tidak reload berulang-ulang/loop).
+        async function pulihkanDariTargetIdError(err) {
+            const pesan = (err && err.message) ? err.message : String(err || '');
+            if (!/Target ID already exists/i.test(pesan)) return false;
+            if (sessionStorage.getItem('gamasSudahCobaPulihkanIndexedDb') === '1') {
+                console.error('Cache Firestore masih rusak setelah dibersihkan sekali. Coba tutup semua tab dashboard ini lalu buka ulang.');
+                return false;
+            }
+            console.warn('Terdeteksi cache Firestore korup (Target ID already exists). Membersihkan IndexedDB lalu reload...');
+            try {
+                sessionStorage.setItem('gamasSudahCobaPulihkanIndexedDb', '1');
+                const daftarDb = await indexedDB.databases();
+                await Promise.all(daftarDb
+                    .filter(db => db.name && db.name.includes('firestore'))
+                    .map(db => new Promise((resolve) => {
+                        const req = indexedDB.deleteDatabase(db.name);
+                        req.onsuccess = req.onerror = req.onblocked = () => resolve();
+                    })));
+            } catch (e) {
+                console.warn('Gagal membersihkan IndexedDB otomatis:', e);
+            }
+            location.reload();
+            return true;
+        }
+        // Reset flag proteksi-loop begitu app berhasil jalan normal.
+        window.addEventListener('load', () => {
+            setTimeout(() => sessionStorage.removeItem('gamasSudahCobaPulihkanIndexedDb'), 15000);
+        });
 
         let fsdb = null;
         let firestoreSiap = false;
@@ -4962,11 +5000,11 @@
             if (typeof firebase !== 'undefined') {
                 firebase.initializeApp(firebaseConfig);
                 fsdb = firebase.firestore();
-                // Cache offline bawaan Firestore (dipakai kalau internet putus
-                // sebentar; otomatis sinkron lagi begitu online).
-                fsdb.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
-                    console.warn('Firestore offline persistence tidak aktif:', err && err.code);
-                });
+                // Catatan: cache offline bawaan Firestore (enablePersistence) SENGAJA
+                // dimatikan. Fitur ini pernah menyebabkan cache IndexedDB korup dan
+                // memicu error "Target ID already exists" yang bikin sinkron gagal
+                // terus-menerus. Backup offline sekarang mengandalkan sistem
+                // "Save All Data" manual yang sudah ada di aplikasi ini.
                 firestoreSiap = true;
             } else {
                 console.error('SDK Firebase tidak termuat (mungkin diblokir jaringan/adblock).');
