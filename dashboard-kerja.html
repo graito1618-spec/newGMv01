@@ -1868,6 +1868,13 @@
             #tab6 .tg-table .num {
                 text-align: right;
             }
+            #tab6 .tg-table td:last-child,
+            #tab6 .tg-table th:last-child {
+                border-left: 2px solid #444;
+            }
+            #tab6 .tg-table tbody td {
+                height: 20px;
+            }
             #tab6 .tg-summary {
                 display: flex;
                 justify-content: space-between;
@@ -8824,10 +8831,17 @@
                                 <div>Tanggal Cetak: ${tanggalCetak}</div>
                             </div>
                             <table class="tg-table">
+                                <colgroup>
+                                    <col style="width:3%"><col style="width:8%"><col style="width:9%">
+                                    <col style="width:7%"><col style="width:5%"><col style="width:12%">
+                                    <col style="width:6%"><col style="width:6%"><col style="width:7%">
+                                    <col style="width:5%"><col style="width:32%">
+                                </colgroup>
                                 <thead><tr>
-                                    <th>NO</th><th>NO FAKTUR</th><th>NAMA OUTLET</th><th>ALAMAT</th><th>SALESMAN</th>
+                                    <th>NO</th><th>NO FAKTUR</th><th>NAMA OUTLET</th><th>ALAMAT</th><th>SALES</th>
                                     <th>PRODUK</th>
                                     <th>TGL NOTA</th><th>TGL TEMPO</th><th class="num">TAGIHAN</th><th>KET</th>
+                                    <th>HASIL TAGIHAN</th>
                                 </tr></thead>
                                 <tbody>
                                     ${items.map((r,i) => {
@@ -8840,12 +8854,14 @@
                                             <td>${produkDisplay}</td>
                                             <td>${fmtTanggal(r.tanggal)}</td><td>${r.jt || '-'}</td>
                                             <td class="num">${fmtRp(r.total)}</td><td>${ket}</td>
+                                            <td>&nbsp;</td>
                                         </tr>`;
                                     }).join('')}
                                 </tbody>
                                 <tfoot><tr>
                                     <td colspan="8" style="text-align:right;font-weight:700;">SUBTOTAL</td>
                                     <td class="num" style="font-weight:700;">${fmtRp(subtotal)}</td>
+                                    <td></td>
                                     <td></td>
                                 </tr></tfoot>
                             </table>
