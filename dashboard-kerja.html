@@ -948,7 +948,15 @@
         .pg-excel-wrap th {
             text-align: center;
             background: #e2e8f0;
+            color: #1f2937;
             border: 1px solid #b0b8c5;
+        }
+        .pg-excel-wrap thead tr:first-child th {
+            top: 0;
+            height: 34px;
+        }
+        .pg-excel-wrap thead tr:last-child th {
+            top: 34px;
         }
         .pg-excel-wrap td {
             border: 1px solid #e5e9ef;
@@ -1789,6 +1797,9 @@
             .tab-content#tab6.active {
                 display: block !important;
                 padding: 10px !important;
+            }
+            body.printing-pengeluaran .tab-content#tab10 {
+                display: block !important;
             }
             #tab6 .filter-bar {
                 display: none !important;
