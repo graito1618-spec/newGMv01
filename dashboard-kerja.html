@@ -5151,7 +5151,15 @@
         // --------------------------------------------------------------
         const GM_LAST_SYNC_KEY = 'gmLastSyncTime';
         const GM_SNOOZE_KEY = 'gmSyncReminderSnoozeUntil';
+        const GM_MODE_OFFLINE_KEY = 'gmModeOfflineManual';
         const GM_REMINDER_JAM = 2; // jam. Kalau sudah lebih dari ini sejak sinkron terakhir & sedang online -> ingatkan.
+
+        // Mode kerja OFFLINE MANUAL: beda dari status internet laptop.
+        // Kalau ini aktif, APLIKASI sengaja diputus dari server (Firestore
+        // disableNetwork) walau laptop tetap online — supaya kerja tidak
+        // ada jeda/panggilan ke server sama sekali sampai user sendiri
+        // yang mengaktifkan lagi mode online.
+        let modeOfflineManual = localStorage.getItem(GM_MODE_OFFLINE_KEY) === '1';
 
         function formatJamMenit(ts) {
             const d = new Date(ts);
@@ -5169,12 +5177,18 @@
         function pasangIndikatorKoneksi() {
             const wrap = document.createElement('div');
             wrap.id = 'fsConnWrap';
-            wrap.style.cssText = 'position:fixed;bottom:8px;right:8px;z-index:9999;display:flex;align-items:center;gap:6px;';
+            wrap.style.cssText = 'position:fixed;bottom:8px;right:8px;z-index:9999;display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:96vw;';
 
             const badge = document.createElement('div');
             badge.id = 'fsConnBadge';
             badge.style.cssText = 'font-size:11px;padding:4px 10px;border-radius:12px;background:#f1f3f5;color:#495057;box-shadow:0 1px 4px rgba(0,0,0,.15);white-space:nowrap;';
             badge.textContent = '🟡 Menghubungkan ke server...';
+
+            const modeBtn = document.createElement('button');
+            modeBtn.id = 'fsModeBtn';
+            modeBtn.type = 'button';
+            modeBtn.style.cssText = 'font-size:11px;padding:4px 10px;border-radius:12px;border:1px solid #adb5bd;background:#fff;color:#343a40;box-shadow:0 1px 4px rgba(0,0,0,.15);cursor:pointer;white-space:nowrap;';
+            modeBtn.addEventListener('click', toggleModeOffline);
 
             const btn = document.createElement('button');
             btn.id = 'fsSyncBtn';
@@ -5184,13 +5198,69 @@
             btn.addEventListener('click', sinkronSekarang);
 
             wrap.appendChild(badge);
+            wrap.appendChild(modeBtn);
             wrap.appendChild(btn);
             document.body.appendChild(wrap);
+            perbaruiTombolModeOffline();
             return badge;
+        }
+
+        function perbaruiTombolModeOffline() {
+            const btn = document.getElementById('fsModeBtn');
+            if (!btn) return;
+            if (modeOfflineManual) {
+                btn.textContent = '📴 Mode Kerja: OFFLINE';
+                btn.title = 'Aplikasi sengaja diputus dari server. Klik untuk online-kan lagi & sinkron.';
+                btn.style.background = '#495057'; btn.style.color = '#fff'; btn.style.borderColor = '#495057';
+            } else {
+                btn.textContent = '🌐 Mode Kerja: ONLINE';
+                btn.title = 'Klik untuk memutus aplikasi dari server (tetap kerja walau laptop online)';
+                btn.style.background = '#fff'; btn.style.color = '#343a40'; btn.style.borderColor = '#adb5bd';
+            }
+        }
+
+        // Terapkan mode jaringan Firestore sesuai preferensi tersimpan,
+        // dipanggil sekali di awal SEBELUM cek koneksi apa pun dilakukan.
+        async function terapkanModeJaringanAwal() {
+            if (!firestoreSiap) return;
+            try {
+                if (modeOfflineManual) await fsdb.disableNetwork();
+                else await fsdb.enableNetwork();
+            } catch (e) { /* abaikan, tetap lanjut pakai cache lokal */ }
+        }
+
+        async function toggleModeOffline() {
+            const modeBtn = document.getElementById('fsModeBtn');
+            if (modeBtn) modeBtn.disabled = true;
+            modeOfflineManual = !modeOfflineManual;
+            localStorage.setItem(GM_MODE_OFFLINE_KEY, modeOfflineManual ? '1' : '0');
+            try {
+                if (modeOfflineManual) {
+                    await fsdb.disableNetwork();
+                    const badge = document.getElementById('fsConnBadge') || pasangIndikatorKoneksi();
+                    badge.textContent = '📴 Mode Offline (manual) — perubahan disimpan lokal';
+                    badge.style.background = '#e9ecef'; badge.style.color = '#343a40';
+                    sembunyikanReminderSinkron();
+                    perbaruiTombolModeOffline();
+                    if (modeBtn) modeBtn.disabled = false;
+                } else {
+                    await fsdb.enableNetwork();
+                    perbaruiTombolModeOffline();
+                    if (modeBtn) modeBtn.disabled = false;
+                    await sinkronSekarang(); // langsung cek & tarik data terbaru begitu online-kan lagi
+                }
+            } catch (e) {
+                if (modeBtn) modeBtn.disabled = false;
+            }
         }
 
         async function cekKoneksiFirestore() {
             const badge = document.getElementById('fsConnBadge') || pasangIndikatorKoneksi();
+            if (modeOfflineManual) {
+                badge.textContent = '📴 Mode Offline (manual) — perubahan disimpan lokal';
+                badge.style.background = '#e9ecef'; badge.style.color = '#343a40';
+                return false;
+            }
             if (!firestoreSiap) {
                 badge.textContent = '🔴 Server tidak tersedia — data tersimpan LOKAL saja';
                 badge.style.background = '#ffe3e3'; badge.style.color = '#c92a2a';
@@ -5217,6 +5287,8 @@
         // server dan semua perubahan offline yang masih tertunda benar2
         // sudah terkirim. Aman dipakai kapan saja — data yang sudah
         // tersimpan lokal (IndexedDB Firestore) TIDAK hilang oleh reload.
+        // Kalau Mode Kerja sedang OFFLINE (manual), tombol ini otomatis
+        // menyalakan Mode Kerja jadi ONLINE dulu sebelum sinkron.
         // --------------------------------------------------------------
         let sedangSinkron = false;
         async function sinkronSekarang() {
@@ -5228,6 +5300,11 @@
             if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyinkronkan...'; }
             if (badge) { badge.textContent = '🟡 Menyinkronkan ke server...'; badge.style.background = '#fff3bf'; badge.style.color = '#5c3c00'; }
             try {
+                if (modeOfflineManual) {
+                    modeOfflineManual = false;
+                    localStorage.setItem(GM_MODE_OFFLINE_KEY, '0');
+                    perbaruiTombolModeOffline();
+                }
                 if (firestoreSiap && fsdb.enableNetwork) {
                     await fsdb.enableNetwork().catch(() => {});
                 }
@@ -5249,6 +5326,7 @@
         // PENGINGAT OTOMATIS: kalau perangkat sedang online tapi sudah
         // lama tidak berhasil sinkron (default > 2 jam), tampilkan
         // banner pengingat supaya tidak lupa online-kan sore hari.
+        // Tidak muncul kalau Mode Kerja memang sengaja diset OFFLINE.
         // --------------------------------------------------------------
         function sembunyikanReminderSinkron() {
             const el = document.getElementById('gmSyncReminder');
@@ -5287,6 +5365,7 @@
             document.body.appendChild(el);
         }
         function cekPengingatSinkron() {
+            if (modeOfflineManual) { sembunyikanReminderSinkron(); return; } // sengaja offline, jangan diganggu
             if (!navigator.onLine) return; // fokus cuma saat online tapi lupa sinkron
             const lastSyncRaw = localStorage.getItem(GM_LAST_SYNC_KEY);
             const lastSync = lastSyncRaw ? Number(lastSyncRaw) : null;
@@ -5298,9 +5377,13 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', cekKoneksiFirestore);
-        window.addEventListener('online', cekKoneksiFirestore);
+        document.addEventListener('DOMContentLoaded', async () => {
+            await terapkanModeJaringanAwal();
+            await cekKoneksiFirestore();
+        });
+        window.addEventListener('online', () => { if (!modeOfflineManual) cekKoneksiFirestore(); });
         window.addEventListener('offline', function() {
+            if (modeOfflineManual) return; // badge sudah menunjukkan mode offline manual, jangan ditimpa
             const badge = document.getElementById('fsConnBadge') || pasangIndikatorKoneksi();
             badge.textContent = '🔴 Offline — data disimpan lokal, akan sinkron saat online lagi';
             badge.style.background = '#ffe3e3'; badge.style.color = '#c92a2a';
