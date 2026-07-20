@@ -5225,33 +5225,39 @@
             if (!firestoreSiap) return;
             try {
                 if (modeOfflineManual) await fsdb.disableNetwork();
-                else await fsdb.enableNetwork();
+                // Kalau online, tidak perlu panggil enableNetwork() eksplisit di
+                // sini — network memang default aktif begitu Firestore baru
+                // diinisialisasi. Ini SATU-SATUNYA titik di mana kita panggil
+                // disableNetwork()/enableNetwork(), yaitu sekali di awal
+                // sebelum operasi lain berjalan.
             } catch (e) { /* abaikan, tetap lanjut pakai cache lokal */ }
         }
 
-        async function toggleModeOffline() {
+        // --------------------------------------------------------------
+        // PENTING — kenapa toggleModeOffline() & sinkronSekarang() DI
+        // BAWAH INI TIDAK memanggil fsdb.enableNetwork()/disableNetwork()
+        // secara langsung (live) di tengah sesi:
+        // SDK Firestore Web punya bug lama yang belum diperbaiki Google
+        // ("Target ID already exists", lihat firebase/flutterfire#7197)
+        // yang muncul kalau disableNetwork()/enableNetwork() dipanggil
+        // berulang dalam satu sesi yang sama sementara ada query/listener
+        // lain yang sudah berjalan. Solusi amannya: cukup ganti preferensi
+        // di localStorage lalu RELOAD halaman — nyala/matinya koneksi
+        // hanya terjadi SEKALI di awal (lihat terapkanModeJaringanAwal
+        // di atas), tepat sebelum operasi lain mulai jalan, sesuai pola
+        // yang didukung resmi oleh dokumentasi Firebase.
+        // --------------------------------------------------------------
+        function toggleModeOffline() {
             const modeBtn = document.getElementById('fsModeBtn');
             if (modeBtn) modeBtn.disabled = true;
             modeOfflineManual = !modeOfflineManual;
             localStorage.setItem(GM_MODE_OFFLINE_KEY, modeOfflineManual ? '1' : '0');
-            try {
-                if (modeOfflineManual) {
-                    await fsdb.disableNetwork();
-                    const badge = document.getElementById('fsConnBadge') || pasangIndikatorKoneksi();
-                    badge.textContent = '📴 Mode Offline (manual) — perubahan disimpan lokal';
-                    badge.style.background = '#e9ecef'; badge.style.color = '#343a40';
-                    sembunyikanReminderSinkron();
-                    perbaruiTombolModeOffline();
-                    if (modeBtn) modeBtn.disabled = false;
-                } else {
-                    await fsdb.enableNetwork();
-                    perbaruiTombolModeOffline();
-                    if (modeBtn) modeBtn.disabled = false;
-                    await sinkronSekarang(); // langsung cek & tarik data terbaru begitu online-kan lagi
-                }
-            } catch (e) {
-                if (modeBtn) modeBtn.disabled = false;
+            const badge = document.getElementById('fsConnBadge');
+            if (badge) {
+                badge.textContent = modeOfflineManual ? '📴 Mengaktifkan mode offline...' : '🟡 Mengaktifkan mode online...';
+                badge.style.background = '#fff3bf'; badge.style.color = '#5c3c00';
             }
+            setTimeout(() => location.reload(), 300);
         }
 
         async function cekKoneksiFirestore() {
@@ -5281,45 +5287,27 @@
         }
 
         // --------------------------------------------------------------
-        // TOMBOL "🔄 Sinkron Sekarang" — memaksa cek ulang koneksi ke
-        // Firestore (bukan cuma mengandalkan status pasif), lalu muat
-        // ulang halaman supaya SEMUA tab tertarik data terbaru dari
-        // server dan semua perubahan offline yang masih tertunda benar2
-        // sudah terkirim. Aman dipakai kapan saja — data yang sudah
-        // tersimpan lokal (IndexedDB Firestore) TIDAK hilang oleh reload.
-        // Kalau Mode Kerja sedang OFFLINE (manual), tombol ini otomatis
-        // menyalakan Mode Kerja jadi ONLINE dulu sebelum sinkron.
+        // TOMBOL "🔄 Sinkron Sekarang" — pastikan Mode Kerja jadi ONLINE
+        // lalu MUAT ULANG halaman (bukan panggil enableNetwork() secara
+        // live), supaya semua tab tertarik data terbaru dari server dan
+        // semua perubahan offline yang tertunda benar-benar terkirim,
+        // tanpa memicu bug SDK di atas. Aman dipakai kapan saja — data
+        // yang sudah tersimpan lokal (IndexedDB Firestore) TIDAK hilang
+        // oleh reload, dan tetap akan terkirim begitu online lagi.
         // --------------------------------------------------------------
         let sedangSinkron = false;
-        async function sinkronSekarang() {
+        function sinkronSekarang() {
             if (sedangSinkron) return;
             sedangSinkron = true;
             const btn = document.getElementById('fsSyncBtn');
             const badge = document.getElementById('fsConnBadge');
-            const teksAsli = btn ? btn.textContent : '';
             if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyinkronkan...'; }
             if (badge) { badge.textContent = '🟡 Menyinkronkan ke server...'; badge.style.background = '#fff3bf'; badge.style.color = '#5c3c00'; }
-            try {
-                if (modeOfflineManual) {
-                    modeOfflineManual = false;
-                    localStorage.setItem(GM_MODE_OFFLINE_KEY, '0');
-                    perbaruiTombolModeOffline();
-                }
-                if (firestoreSiap && fsdb.enableNetwork) {
-                    await fsdb.enableNetwork().catch(() => {});
-                }
-                const ok = await cekKoneksiFirestore();
-                if (ok) {
-                    if (btn) btn.textContent = '✅ Tersinkron, memuat ulang...';
-                    setTimeout(() => location.reload(), 900);
-                } else {
-                    if (btn) { btn.textContent = teksAsli; btn.disabled = false; }
-                    sedangSinkron = false;
-                }
-            } catch (e) {
-                if (btn) { btn.textContent = teksAsli; btn.disabled = false; }
-                sedangSinkron = false;
+            if (modeOfflineManual) {
+                modeOfflineManual = false;
+                localStorage.setItem(GM_MODE_OFFLINE_KEY, '0');
             }
+            setTimeout(() => location.reload(), 400);
         }
 
         // --------------------------------------------------------------
