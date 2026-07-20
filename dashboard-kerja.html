@@ -853,6 +853,339 @@
         .table-wrap th.num {
             text-align: right;
         }
+        /* ===== TAB 1 - BANK DATA PENJUALAN: Split View =====
+           Panel kiri: daftar ringkas per No.Faktur (1 baris = 1 faktur, tidak
+           berulang meski faktur punya banyak baris produk). Klik salah satu ->
+           panel kanan (tabel detail yang sudah ada) otomatis difilter hanya
+           menampilkan baris produk faktur itu. Tidak ada kolom yang dihapus. */
+        .tab1-split-wrap {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        .tab1-split-left {
+            width: 250px;
+            flex-shrink: 0;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .tab1-split-right {
+            flex: 1;
+            min-width: 0;
+        }
+        .tab1-split-left-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #1f4e78;
+            border-bottom: 1px solid #e5e9ef;
+            background: #f8fafc;
+        }
+        .tab1-split-showall {
+            font-size: 9px;
+            font-weight: 700;
+            color: #b91c1c;
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: 2px 8px;
+            cursor: pointer;
+        }
+        .tab1-split-list {
+            height: 485px;
+            max-height: 485px;
+            overflow-y: auto;
+        }
+        .tab1-split-item {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 7px 10px;
+            border: none;
+            border-bottom: 1px solid #eef1f6;
+            background: #fff;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .tab1-split-item:hover {
+            background: #f0f4ff;
+        }
+        .tab1-split-item.active {
+            background: #e8edff;
+            box-shadow: inset 3px 0 0 #667eea;
+        }
+        .tab1-split-item .ti-top {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            font-weight: 700;
+            color: #1f4e78;
+        }
+        .tab1-split-item .ti-mid {
+            font-size: 10px;
+            color: #374151;
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .tab1-split-item .ti-bottom {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        .tab1-split-item .ti-bottom .ti-total {
+            font-weight: 700;
+            color: #1e7a46;
+        }
+        .tab1-split-empty {
+            padding: 16px;
+            text-align: center;
+            font-size: 10px;
+            color: #9ca3af;
+        }
+        @media (max-width: 900px) {
+            .tab1-split-wrap { flex-direction: column; }
+            .tab1-split-left { width: 100%; }
+            .tab1-split-list { height: 160px; max-height: 160px; }
+        }
+        /* ===== TAB 1 - Toolbar "app-like": Toggle Tabel/Kartu + Filter Chip =====
+           Tujuan: kurangi kesan "Excel" di tab Bank Data Penjualan supaya terasa
+           seperti aplikasi sungguhan, bukan cuma tabel mentah. ===== */
+        .tab1-app-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .tab1-chip-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding: 2px 2px 4px 2px;
+            flex: 1 1 auto;
+            min-width: 0;
+            scrollbar-width: thin;
+        }
+        .tab1-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1.5px solid #dbe1ea;
+            background: #fff;
+            color: #475569;
+            font-size: 10.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .15s ease;
+            flex: 0 0 auto;
+        }
+        .tab1-chip:hover {
+            border-color: #a5b4fc;
+            color: #4338ca;
+            background: #f5f6ff;
+        }
+        .tab1-chip .chip-count {
+            font-size: 9px;
+            font-weight: 700;
+            background: #eef1f6;
+            color: #64748b;
+            border-radius: 999px;
+            padding: 1px 6px;
+            min-width: 16px;
+            text-align: center;
+        }
+        .tab1-chip.active {
+            border-color: transparent;
+            color: #fff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.35);
+        }
+        .tab1-chip.active .chip-count {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+        }
+        .tab1-chip[data-chip="cash"].active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 3px 10px rgba(16, 185, 129, 0.35);
+        }
+        .tab1-chip[data-chip="tempo"].active {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.35);
+        }
+        .tab1-chip[data-chip="lunas"].active {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            box-shadow: 0 3px 10px rgba(34, 197, 94, 0.35);
+        }
+        .tab1-chip[data-chip="belum_lunas"].active {
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+            box-shadow: 0 3px 10px rgba(239, 68, 68, 0.35);
+        }
+        .tab1-view-toggle {
+            display: inline-flex;
+            align-items: center;
+            flex: 0 0 auto;
+            background: #eef1f6;
+            border-radius: 999px;
+            padding: 3px;
+            gap: 2px;
+        }
+        .tab1-view-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-size: 10.5px;
+            font-weight: 700;
+            font-family: inherit;
+            padding: 6px 12px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all .15s ease;
+        }
+        .tab1-view-btn.active {
+            background: #fff;
+            color: #4338ca;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+        }
+        /* ===== Card view (pengganti tabel, tampilan seperti kartu transaksi di app) ===== */
+        .sales-card-list {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 560px;
+            overflow-y: auto;
+            padding: 2px 2px 4px 2px;
+        }
+        .sales-card-list.show { display: flex; }
+        .table-wrap.tab1-hidden { display: none; }
+        .sales-card {
+            background: #fff;
+            border: 1px solid #e5e9f0;
+            border-radius: 14px;
+            padding: 12px 14px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+            position: relative;
+            transition: box-shadow .15s ease, transform .1s ease;
+        }
+        .sales-card:hover {
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.14);
+        }
+        .sales-card.selected {
+            border-color: #a5b4fc;
+            background: #f6f7ff;
+        }
+        .sales-card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .sales-card-top-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+        .sales-card-top-left input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+            flex-shrink: 0;
+            accent-color: #667eea;
+        }
+        .sales-card-faktur {
+            font-size: 11px;
+            font-weight: 800;
+            color: #1f4e78;
+            text-decoration: underline;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sales-card-date {
+            font-size: 9px;
+            color: #94a3b8;
+            font-weight: 600;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .sales-card-produk {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-top: 7px;
+            line-height: 1.3;
+        }
+        .sales-card-qty {
+            font-size: 9.5px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        .sales-card-mid {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #e8ecf4;
+        }
+        .sales-card-total {
+            font-size: 13.5px;
+            font-weight: 800;
+            color: #1e7a46;
+        }
+        .sales-card-badges {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .sales-card-foot {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 10px;
+            margin-top: 7px;
+            font-size: 9.5px;
+            color: #6b7280;
+        }
+        .sales-card-foot b { color: #374151; }
+        .sales-card-empty {
+            text-align: center;
+            padding: 30px 10px;
+            color: #9ca3af;
+            font-size: 11px;
+        }
+        .badge.lunas-mini {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+        .badge.belum-mini {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+        @media (max-width: 900px) {
+            .tab1-app-toolbar { flex-direction: column; align-items: stretch; }
+            .tab1-view-toggle { align-self: flex-end; }
+        }
         /* ===== TAB 3 (CEK CASH) & TAB 4 (CEK PIUTANG): sticky kolom Checkbox +
            No.Faktur supaya tetap kelihatan & bisa langsung dicentang walau tabel
            digeser ke kanan untuk lihat kolom lain (Sisa Tagihan, Status, dst) —
@@ -3437,6 +3770,19 @@
 
     <!-- ======= TAB 1 – BANK DATA PENJUALAN ======= -->
     <div class="tab-content active" id="tab1">
+        <div class="tab1-app-toolbar">
+            <div class="tab1-chip-row" id="tab1ChipRow">
+                <button type="button" class="tab1-chip active" data-chip="semua">Semua <span class="chip-count" id="chipCountSemua">0</span></button>
+                <button type="button" class="tab1-chip" data-chip="cash">💵 Cash <span class="chip-count" id="chipCountCash">0</span></button>
+                <button type="button" class="tab1-chip" data-chip="tempo">🗓️ Tempo <span class="chip-count" id="chipCountTempo">0</span></button>
+                <button type="button" class="tab1-chip" data-chip="lunas">✅ Lunas <span class="chip-count" id="chipCountLunas">0</span></button>
+                <button type="button" class="tab1-chip" data-chip="belum_lunas">❌ Belum Lunas <span class="chip-count" id="chipCountBelumLunas">0</span></button>
+            </div>
+            <div class="tab1-view-toggle" id="tab1ViewToggle">
+                <button type="button" class="tab1-view-btn active" id="tab1ViewTabelBtn" data-view="table">📋 Tabel</button>
+                <button type="button" class="tab1-view-btn" id="tab1ViewKartuBtn" data-view="card">🗂️ Kartu</button>
+            </div>
+        </div>
         <div class="filter-bar">
             <div class="field"><label>Cari Faktur</label><input type="text" id="fFakturSales" placeholder="cth: 011003260700046"></div>
             <div class="field"><label>Produk</label><input type="text" id="fProdukSales" placeholder="cth: Indomie"></div>
@@ -3472,18 +3818,30 @@
                 </div>
             </div>
         </div>
-        <div class="table-wrap" style="height: 485px; max-height: 485px;">
-            <table>
-                <thead><tr><th style="width:26px;"><input type="checkbox" id="salesSelectAll" title="Pilih semua baris yang tampil"></th><th>Tanggal</th><th>No.Faktur</th><th>Produk</th><th class="num">Jumlah</th><th>Satuan</th><th class="num">Harga Jual</th><th class="num">Disc</th><th class="num">Total</th><th>Sales</th><th>Customer</th><th>Alamat</th><th>Pembayaran</th></tr></thead>
-                <tbody id="salesTableBody"><tr><td colspan="13" class="empty-msg">📂 Tidak ada data. Import Excel atau Tambah transaksi.</td></tr></tbody>
-            </table>
-        </div>
-        <div class="pagination" id="salesPager" style="display:none;">
-            <div><button id="salesPrevDate">◀ Sebelumnya</button><span id="salesPageLabel">GajahMas2026byHamung</span><button id="salesNextDate" disabled="">Berikutnya ▶</button></div>
-            <div><span class="badge-count" id="salesTotalData">0 data</span></div>
-        </div>
-        <div class="piutang-summary" id="piutangSummarySales" style="display:none;">
-            <span class="label">💰 Total Piutang (Tempo):</span><span class="total" id="totalPiutangSales">Rp 0</span>
+        <div class="tab1-split-wrap">
+            <div class="tab1-split-left">
+                <div class="tab1-split-left-head">
+                    <span>📄 Daftar Faktur</span>
+                    <button type="button" id="tab1SplitShowAll" class="tab1-split-showall" style="display:none;">✕ Tampilkan Semua</button>
+                </div>
+                <div class="tab1-split-list" id="tab1SplitList"></div>
+            </div>
+            <div class="tab1-split-right">
+                <div class="table-wrap" style="height: 485px; max-height: 485px;" id="tab1TableWrap">
+                    <table>
+                        <thead><tr><th style="width:26px;"><input type="checkbox" id="salesSelectAll" title="Pilih semua baris yang tampil"></th><th>Tanggal</th><th>No.Faktur</th><th>Produk</th><th class="num">Jumlah</th><th>Satuan</th><th class="num">Harga Jual</th><th class="num">Disc</th><th class="num">Total</th><th>Sales</th><th>Customer</th><th>Alamat</th><th>Pembayaran</th></tr></thead>
+                        <tbody id="salesTableBody"><tr><td colspan="13" class="empty-msg">📂 Tidak ada data. Import Excel atau Tambah transaksi.</td></tr></tbody>
+                    </table>
+                </div>
+                <div class="sales-card-list" id="salesCardList" style="height:485px;"></div>
+                <div class="pagination" id="salesPager" style="display:none;">
+                    <div><button id="salesPrevDate">◀ Sebelumnya</button><span id="salesPageLabel">GajahMas2026byHamung</span><button id="salesNextDate" disabled="">Berikutnya ▶</button></div>
+                    <div><span class="badge-count" id="salesTotalData">0 data</span></div>
+                </div>
+                <div class="piutang-summary" id="piutangSummarySales" style="display:none;">
+                    <span class="label">💰 Total Piutang (Tempo):</span><span class="total" id="totalPiutangSales">Rp 0</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -6828,8 +7186,201 @@
             return result;
         }
 
+        // ===== TAB 1 - App-like toolbar: Toggle Tabel/Kartu + Filter Chip =====
+        let tab1ViewMode = localStorage.getItem('tab1ViewMode') === 'card' ? 'card' : 'table';
+        let tab1QuickFilter = 'semua'; // semua | cash | tempo | lunas | belum_lunas
+
+        // Cache peta status faktur (lunas/belum) supaya tidak dihitung ulang
+        // berkali-kali per render. Dibangun ulang tiap kali renderSales dipanggil
+        // (murah karena hanya diperlukan saat ada data Tempo).
+        function getTab1FakturStatusMap() {
+            const map = new Map();
+            if (typeof ptBuildTempoRows !== 'function') return map;
+            try {
+                ptBuildTempoRows().forEach(r => {
+                    map.set(normFaktur(r.noFaktur), r.statusClass);
+                });
+            } catch (e) { /* biarkan map kosong kalau gagal, chip lunas tetap tidak error */ }
+            return map;
+        }
+
+        function tab1RowMatchesQuickFilter(r, filterKey, statusMap) {
+            if (filterKey === 'semua') return true;
+            if (filterKey === 'cash') return r.Pembayaran === 'Cash';
+            if (filterKey === 'tempo') return r.Pembayaran === 'Tempo';
+            if (filterKey === 'lunas') return r.Pembayaran === 'Tempo' && statusMap.get(normFaktur(r['No.Faktur'])) === 'lunas';
+            if (filterKey === 'belum_lunas') return r.Pembayaran === 'Tempo' && statusMap.get(normFaktur(r['No.Faktur'])) !== 'lunas';
+            return true;
+        }
+
+        function updateTab1Chips(baseRows) {
+            const needStatus = baseRows.some(r => r.Pembayaran === 'Tempo');
+            const statusMap = needStatus ? getTab1FakturStatusMap() : new Map();
+            let cCash = 0, cTempo = 0, cLunas = 0, cBelum = 0;
+            baseRows.forEach(r => {
+                if (r.Pembayaran === 'Cash') cCash++;
+                else {
+                    cTempo++;
+                    if (statusMap.get(normFaktur(r['No.Faktur'])) === 'lunas') cLunas++; else cBelum++;
+                }
+            });
+            const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            setTxt('chipCountSemua', baseRows.length);
+            setTxt('chipCountCash', cCash);
+            setTxt('chipCountTempo', cTempo);
+            setTxt('chipCountLunas', cLunas);
+            setTxt('chipCountBelumLunas', cBelum);
+            document.querySelectorAll('#tab1ChipRow .tab1-chip').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.chip === tab1QuickFilter);
+            });
+            return statusMap;
+        }
+
+        document.getElementById('tab1ChipRow').addEventListener('click', function(e) {
+            const btn = e.target.closest('.tab1-chip');
+            if (!btn) return;
+            tab1QuickFilter = btn.dataset.chip;
+            // Sinkronkan dengan dropdown Pembayaran yang sudah ada supaya filter
+            // lain (mis. mode Piutang) tetap konsisten & tidak membingungkan.
+            const pembayaranSel = document.getElementById('fPembayaranSales');
+            if (pembayaranSel) {
+                if (tab1QuickFilter === 'cash') pembayaranSel.value = 'Cash';
+                else if (tab1QuickFilter === 'tempo' || tab1QuickFilter === 'lunas' || tab1QuickFilter === 'belum_lunas') pembayaranSel.value = 'Tempo';
+                else pembayaranSel.value = '';
+            }
+            salesCurrentDateIndex = Infinity;
+            renderSales();
+        });
+
+        function applyTab1ViewMode() {
+            const isCard = tab1ViewMode === 'card';
+            const tableWrap = document.getElementById('tab1TableWrap');
+            const cardList = document.getElementById('salesCardList');
+            const tabelBtn = document.getElementById('tab1ViewTabelBtn');
+            const kartuBtn = document.getElementById('tab1ViewKartuBtn');
+            if (tableWrap) tableWrap.classList.toggle('tab1-hidden', isCard);
+            if (cardList) cardList.classList.toggle('show', isCard);
+            if (tabelBtn) tabelBtn.classList.toggle('active', !isCard);
+            if (kartuBtn) kartuBtn.classList.toggle('active', isCard);
+        }
+        document.getElementById('tab1ViewToggle').addEventListener('click', function(e) {
+            const btn = e.target.closest('.tab1-view-btn');
+            if (!btn) return;
+            tab1ViewMode = btn.dataset.view === 'card' ? 'card' : 'table';
+            localStorage.setItem('tab1ViewMode', tab1ViewMode);
+            applyTab1ViewMode();
+            renderSales();
+        });
+        applyTab1ViewMode();
+
+        function renderSalesCards(displayRows, salesIndexMap, statusMap) {
+            const wrap = document.getElementById('salesCardList');
+            if (!wrap) return;
+            if (displayRows.length === 0) {
+                wrap.innerHTML = `<div class="sales-card-empty">📂 ${tab1SelectedFaktur ? 'Faktur ini tidak ada di data yang tampil saat ini.' : 'Tidak ada data. Import Excel atau Tambah transaksi.'}</div>`;
+                return;
+            }
+            wrap.innerHTML = displayRows.map(r => {
+                const jumlah = parseNumber(r.Jumlah);
+                const harga = parseNumber(r['Harga Jual']);
+                const disc = parseNumber(r.Disc);
+                const total = (jumlah * harga) - disc;
+                const gidx = salesIndexMap.get(r);
+                const cbChecked = salesRowsSelected.has(gidx) ? 'checked' : '';
+                const noFakturSafe = escapeHtml(String(r['No.Faktur'] || ''));
+                const sudahDiedit = !!r._Diedit;
+                const isCash = r.Pembayaran === 'Cash';
+                const status = isCash ? null : statusMap.get(normFaktur(r['No.Faktur']));
+                const statusBadge = isCash ? '' : (status === 'lunas' ?
+                    '<span class="badge lunas-mini">✅ Lunas</span>' :
+                    '<span class="badge belum-mini">❌ Belum Lunas</span>');
+                return `<div class="sales-card${salesRowsSelected.has(gidx) ? ' selected' : ''}">
+                    <div class="sales-card-top">
+                        <div class="sales-card-top-left">
+                            <input type="checkbox" class="sales-trash-checkbox" data-gidx="${gidx}" ${cbChecked}>
+                            ${noFakturSafe ? `<a href="#" class="tab1-faktur-link sales-card-faktur" data-faktur="${noFakturSafe}">${sudahDiedit ? '✏️ ' : ''}${noFakturSafe}</a>` : '<span class="sales-card-faktur">—</span>'}
+                        </div>
+                        <span class="sales-card-date">${fmtTanggal(r.Tanggal)}</span>
+                    </div>
+                    <div class="sales-card-produk">${escapeHtml(r.Produk || '')}</div>
+                    <div class="sales-card-qty">${jumlah} ${escapeHtml(r.Satuan || '')} × ${fmtRp(harga)}${disc ? ' − disc ' + fmtRp(disc) : ''}</div>
+                    <div class="sales-card-mid">
+                        <span class="sales-card-total">${fmtRp(total)}</span>
+                        <span class="sales-card-badges"><span class="badge ${isCash ? 'cash' : 'tempo'}">${r.Pembayaran || 'Tempo'}</span>${statusBadge}</span>
+                    </div>
+                    <div class="sales-card-foot">
+                        <span><b>${escapeHtml(r.Sales || '-')}</b></span>
+                        <span>${escapeHtml(r.Customer || '-')}</span>
+                        <span>${escapeHtml(r.Alamat || '-')}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        document.getElementById('salesCardList').addEventListener('change', function(e) {
+            if (e.target.classList.contains('sales-trash-checkbox')) {
+                const gidx = parseInt(e.target.dataset.gidx, 10);
+                if (e.target.checked) salesRowsSelected.add(gidx); else salesRowsSelected.delete(gidx);
+                e.target.closest('.sales-card').classList.toggle('selected', e.target.checked);
+                updateSalesSelectedInfo();
+            }
+        });
+
+        let tab1SelectedFaktur = null;
+        function renderTab1SplitList(rows) {
+            const wrap = document.getElementById('tab1SplitList');
+            const btnShowAll = document.getElementById('tab1SplitShowAll');
+            if (!wrap) return;
+            if (!rows.length) {
+                wrap.innerHTML = '<div class="tab1-split-empty">📂 Tidak ada faktur.</div>';
+                if (btnShowAll) btnShowAll.style.display = 'none';
+                return;
+            }
+            const groups = new Map();
+            rows.forEach(r => {
+                const key = normFaktur(r['No.Faktur']);
+                if (!groups.has(key)) {
+                    groups.set(key, {
+                        noFaktur: r['No.Faktur'] || '',
+                        tanggal: r.Tanggal,
+                        customer: r.Customer || '',
+                        sales: r.Sales || '',
+                        items: 0,
+                        total: 0
+                    });
+                }
+                const g = groups.get(key);
+                g.items += 1;
+                g.total += parseNumber(r.Total);
+            });
+            wrap.innerHTML = Array.from(groups.values()).map(g => {
+                const activeCls = (tab1SelectedFaktur && normFaktur(tab1SelectedFaktur) === normFaktur(g.noFaktur)) ?
+                    ' active' : '';
+                return `<button type="button" class="tab1-split-item${activeCls}" data-faktur="${escapeHtml(g.noFaktur)}">
+                    <div class="ti-top"><span>${escapeHtml(g.noFaktur)}</span><span>${fmtTanggal(g.tanggal)}</span></div>
+                    <div class="ti-mid">${escapeHtml(g.customer)}</div>
+                    <div class="ti-bottom"><span>${escapeHtml(g.sales)} · ${g.items} item</span><span class="ti-total">${fmtRp(g.total)}</span></div>
+                </button>`;
+            }).join('');
+            if (btnShowAll) btnShowAll.style.display = tab1SelectedFaktur ? 'inline-block' : 'none';
+        }
+        document.getElementById('tab1SplitList').addEventListener('click', function(e) {
+            const btn = e.target.closest('.tab1-split-item');
+            if (!btn) return;
+            const faktur = btn.getAttribute('data-faktur');
+            tab1SelectedFaktur = (tab1SelectedFaktur && normFaktur(tab1SelectedFaktur) === normFaktur(faktur)) ?
+                null : faktur;
+            renderSales();
+        });
+        document.getElementById('tab1SplitShowAll').addEventListener('click', function() {
+            tab1SelectedFaktur = null;
+            renderSales();
+        });
+
         function renderSales() {
-            const allFiltered = getFilteredSales();
+            const beforeQuickFilter = getFilteredSales();
+            const statusMapForChips = updateTab1Chips(beforeQuickFilter);
+            const allFiltered = tab1QuickFilter === 'semua' ? beforeQuickFilter :
+                beforeQuickFilter.filter(r => tab1RowMatchesQuickFilter(r, tab1QuickFilter, statusMapForChips));
             const tbody = document.getElementById('salesTableBody');
             const tanggalFilterActive = !!document.getElementById('fTanggalSalesFrom').value || !!document
                 .getElementById('fTanggalSalesTo').value;
@@ -6848,13 +7399,17 @@
                 document.getElementById('salesNextDate').disabled = salesCurrentDateIndex >= uniqueDates.length - 1;
                 document.getElementById('salesPager').style.display = 'flex';
             }
-            if (rows.length === 0) {
-                tbody.innerHTML =
+            renderTab1SplitList(rows);
+            const displayRows = tab1SelectedFaktur ?
+                rows.filter(r => normFaktur(r['No.Faktur']) === normFaktur(tab1SelectedFaktur)) : rows;
+            if (displayRows.length === 0) {
+                tbody.innerHTML = tab1SelectedFaktur ?
+                    '<tr><td colspan="13" class="empty-msg">📂 Faktur ini tidak ada di data yang tampil saat ini.</td></tr>' :
                     '<tr><td colspan="13" class="empty-msg">📂 Tidak ada data. Import Excel atau Tambah transaksi.</td></tr>';
             } else {
                 const salesIndexMap = new Map();
                 salesData.forEach((r, i) => salesIndexMap.set(r, i));
-                tbody.innerHTML = rows.map(r => {
+                tbody.innerHTML = displayRows.map(r => {
                     const jumlah = parseNumber(r.Jumlah);
                     const harga = parseNumber(r['Harga Jual']);
                     const disc = parseNumber(r.Disc);
@@ -6870,9 +7425,12 @@
                     const fakturLinkTitle = sudahDiedit ? ' title="Faktur ini pernah diedit dari modal detail"' : '';
                     return `<tr><td><input type="checkbox" class="sales-trash-checkbox" data-gidx="${gidx}" ${cbChecked}></td><td>${fmtTanggal(r.Tanggal)}</td><td>${noFakturSafe ? `<a href="#" class="tab1-faktur-link" data-faktur="${noFakturSafe}" style="${fakturLinkStyle}"${fakturLinkTitle}>${sudahDiedit ? '✏️ ' : ''}${noFakturSafe}</a>` : ''}</td><td>${r.Produk || ''}</td><td class="num">${jumlah}</td><td>${r.Satuan || ''}</td><td class="num">${fmtRp(harga)}</td><td class="num">${fmtRp(disc)}</td><td class="num">${fmtRp(total)}</td><td>${r.Sales || ''}</td><td>${r.Customer || ''}</td><td>${r.Alamat || ''}</td><td><span class="badge ${r.Pembayaran === 'Cash' ? 'cash' : 'tempo'}">${r.Pembayaran || 'Tempo'}</span></td></tr>`;
                 }).join('');
+                renderSalesCards(displayRows, salesIndexMap, statusMapForChips);
             }
+            if (displayRows.length === 0) renderSalesCards([], new Map(), statusMapForChips);
             updateSalesSelectedInfo();
-            document.getElementById('salesTotalData').textContent = rows.length + ' data';
+            document.getElementById('salesTotalData').textContent = displayRows.length + ' data' +
+                (tab1SelectedFaktur ? ' (faktur ' + tab1SelectedFaktur + ')' : '');
             document.getElementById('badgeSales').textContent = salesData.length;
             document.getElementById('salesRangeLabel').textContent = salesData.length ? 'Total ' + salesData.length +
                 ' baris' : 'Belum ada data';
