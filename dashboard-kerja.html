@@ -853,6 +853,52 @@
         .table-wrap th.num {
             text-align: right;
         }
+        /* ===== TAB 3 (CEK CASH) & TAB 4 (CEK PIUTANG): sticky kolom Checkbox +
+           No.Faktur supaya tetap kelihatan & bisa langsung dicentang walau tabel
+           digeser ke kanan untuk lihat kolom lain (Sisa Tagihan, Status, dst) —
+           tanpa perlu menghapus kolom & tanpa geser bolak-balik. ===== */
+        #tab3 .cash-table-wrap th:nth-child(1),
+        #tab3 .cash-table-wrap td:nth-child(1),
+        #tab4 .table-wrap th:nth-child(1),
+        #tab4 .table-wrap td:nth-child(1) {
+            position: sticky;
+            left: 0px;
+        }
+        #tab3 .cash-table-wrap th:nth-child(2),
+        #tab3 .cash-table-wrap td:nth-child(2),
+        #tab4 .table-wrap th:nth-child(2),
+        #tab4 .table-wrap td:nth-child(2) {
+            position: sticky;
+            left: 30px;
+            box-shadow: 4px 0 6px -4px rgba(0,0,0,0.35);
+        }
+        #tab3 .cash-table-wrap td:nth-child(1),
+        #tab3 .cash-table-wrap td:nth-child(2),
+        #tab4 .table-wrap td:nth-child(1),
+        #tab4 .table-wrap td:nth-child(2) {
+            background: #fafbfc;
+            z-index: 3;
+        }
+        #tab3 .cash-table-wrap tbody tr:nth-child(even) td:nth-child(1),
+        #tab3 .cash-table-wrap tbody tr:nth-child(even) td:nth-child(2),
+        #tab4 .table-wrap tbody tr:nth-child(even) td:nth-child(1),
+        #tab4 .table-wrap tbody tr:nth-child(even) td:nth-child(2) {
+            background: #f8fafc;
+        }
+        #tab3 .cash-table-wrap tbody tr:hover td:nth-child(1),
+        #tab3 .cash-table-wrap tbody tr:hover td:nth-child(2) {
+            background: #fff4f6;
+        }
+        #tab4 .table-wrap tbody tr:hover td:nth-child(1),
+        #tab4 .table-wrap tbody tr:hover td:nth-child(2) {
+            background: #f0f4ff;
+        }
+        #tab3 .cash-table-wrap th:nth-child(1),
+        #tab3 .cash-table-wrap th:nth-child(2),
+        #tab4 .table-wrap th:nth-child(1),
+        #tab4 .table-wrap th:nth-child(2) {
+            z-index: 6;
+        }
         /* Expandable Row Styling */
         .table-wrap .expand-btn {
             background: none;
@@ -3529,8 +3575,8 @@
                 <thead>
                     <tr>
                         <th style="width:30px;"><input type="checkbox" id="cashSelectAll" title="Pilih Semua"></th>
+                        <th style="width:110px;">No.Faktur</th>
                         <th>Tanggal Transaksi</th>
-                        <th>No.Faktur</th>
                         <th>Customer</th>
                         <th>Alamat</th>
                         <th>Sales</th>
@@ -3584,8 +3630,8 @@
                 <thead>
                     <tr>
                         <th style="width:30px;"><input type="checkbox" id="ptSelectAll" title="Pilih Semua"></th>
+                        <th style="width:110px;">No.Faktur</th>
                         <th style="width:70px;">Tgl Transaksi</th>
-                        <th>No.Faktur</th>
                         <th>Customer</th>
                         <th>Alamat</th>
                         <th>Sales</th>
@@ -7502,8 +7548,8 @@
                     const fakturLinkStyle = 'color:#1f4e78;font-weight:700;text-decoration:underline;';
                     return `<tr>
                         <td><input type="checkbox" class="cash-row-checkbox" data-faktur="${noFaktur}" ${cbChecked}></td>
-                        <td>${fmtTanggal(d.Tanggal)}</td>
                         <td><span class="faktur-link" data-idx="${start+idx}" data-src="cekCash" style="${fakturLinkStyle}">${cashNotesMap[noFaktur] ? '📝 ' : ''}${noFaktur}</span></td>
+                        <td>${fmtTanggal(d.Tanggal)}</td>
                         <td>${d.Customer || ''}</td>
                         <td>${d.Alamat || ''}</td>
                         <td>${d.Sales || ''}</td>
@@ -7903,8 +7949,8 @@
                     const sisaTagihan = ptSisaTagihanBaris(r);
                     return `<tr class="${r.statusClass==='overdue' ? 'pt-row-overdue' : ''}">
                                 <td><input type="checkbox" class="pt-row-checkbox" data-faktur="${r.noFaktur}" ${checked}></td>
-                                <td>${fmtTanggalYY(fmtTanggal(r.tanggal))}</td>
                                 <td><a href="#" class="pt-faktur-link" data-idx="${realIdx}" style="color:#1f4e78; font-weight:700; text-decoration:underline;">${piutangNotesMap[r.noFaktur] ? '📝 ' : ''}${r.noFaktur||''}</a></td>
+                                <td>${fmtTanggalYY(fmtTanggal(r.tanggal))}</td>
                                 <td>${r.customer||''}</td>
                                 <td>${r.alamat||''}</td>
                                 <td>${r.sales||''}</td>
