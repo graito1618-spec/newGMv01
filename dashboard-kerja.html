@@ -7959,11 +7959,11 @@
                                 <td class="num">${fmtRp(r.total)}</td>
                                 <td class="num">${r.statusClass === 'lunas' ? '-' : fmtRp(sisaTagihan)}</td>
                                 <td>${r.jt ? fmtTanggalYY(r.jt) : '-'}</td>
-                                <td><span class="badge pt-${r.statusClass}">${r.statusClass==='overdue' && r.overdueDays!=null ? `${r.overdueDays} hr/Overdue` : ptStatusLabel(r.statusClass)}</span></td>
+                                <td>${r.statusClass === 'lunas' ? '<span class="stempel-lunas">Lunas</span>' : `<span class="badge pt-${r.statusClass}">${r.statusClass==='overdue' && r.overdueDays!=null ? `${r.overdueDays} hr/Overdue` : ptStatusLabel(r.statusClass)}</span>`}</td>
                                 <td>${r.tanggalBayar || '-'}</td>
                                 <td class="num">${r.totalBayar!=null ? fmtRp(r.totalBayar) : '-'}</td>
                                 <td>${cetakTagihanMap[r.noFaktur] || '-'}</td>
-                                <td>${r.statusClass === 'lunas' ? '<span class="stempel-lunas">Lunas</span>' : (r.ketRaw || '-')}</td>
+                                <td>${r.ketRaw || '-'}</td>
                             </tr>`;
                 }).join('');
             }
