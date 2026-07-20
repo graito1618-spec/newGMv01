@@ -3958,7 +3958,7 @@
         </div>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>No.Faktur</th><th>Tgl Faktur</th><th>Sumber Uang</th><th>Tgl Uang Masuk</th><th>Produk</th><th>Sales</th><th class="num">Qty</th><th class="num">Profit</th></tr></thead>
+                <thead><tr><th>No.Faktur</th><th>Tgl Faktur</th><th>Sumber Uang</th><th>Tgl Uang Masuk</th><th>Produk</th><th>Sales</th><th class="num">Qty</th><th class="num" id="rpThProfit" style="cursor:pointer; user-select:none;" title="Klik untuk urutkan berdasarkan profit">Profit <span id="rpSortArrow"></span></th></tr></thead>
                 <tbody id="rpTableBody"><tr><td colspan="8" class="empty-msg">📂 Belum ada data. Pastikan Bank Data Penjualan &amp; Data Uang Masuk sudah diisi.</td></tr></tbody>
             </table>
         </div>
@@ -9444,6 +9444,7 @@
         let rpFiltered = [];
         let rpPage = 1;
         const rpRowsPerPage = 20;
+        let rpSortMode = 'tanggal'; // 'tanggal' | 'profit-asc' | 'profit-desc'
 
         // Menghitung BIAYA (Harga Beli x Jumlah) & metadata satu No.Faktur dari Bank Data
         // Penjualan (Tab 1). Ini bukan profit — profit dihitung belakangan di rpBangunData
@@ -9622,10 +9623,26 @@
             rpTglEl.textContent = fmtRp(profitHariItu);
         }
         document.getElementById('rpTglPilih').addEventListener('change', rpUpdateTglValue);
+        document.getElementById('rpThProfit').addEventListener('click', function() {
+            rpSortMode = rpSortMode === 'profit-asc' ? 'profit-desc' :
+                         rpSortMode === 'profit-desc' ? 'tanggal' : 'profit-asc';
+            rpPage = 1;
+            renderRekapProfit();
+        });
 
         function renderRekapProfit() {
             rpFiltered = rpGetFiltered();
-            rpFiltered.sort((a, b) => (b.tglUangMasuk || '').localeCompare(a.tglUangMasuk || ''));
+            if (rpSortMode === 'profit-asc') {
+                rpFiltered.sort((a, b) => a.profit - b.profit);
+            } else if (rpSortMode === 'profit-desc') {
+                rpFiltered.sort((a, b) => b.profit - a.profit);
+            } else {
+                rpFiltered.sort((a, b) => (b.tglUangMasuk || '').localeCompare(a.tglUangMasuk || ''));
+            }
+            const arrowEl = document.getElementById('rpSortArrow');
+            if (arrowEl) {
+                arrowEl.textContent = rpSortMode === 'profit-asc' ? '▲' : rpSortMode === 'profit-desc' ? '▼' : '';
+            }
 
             const total = rpFiltered.length;
             const totalPages = Math.max(1, Math.ceil(total / rpRowsPerPage));
@@ -9652,7 +9669,7 @@
                         <td>${escapeHtml(item.produk)}</td>
                         <td>${escapeHtml(item.sales)}</td>
                         <td class="num">${item.qty}</td>
-                        <td class="num" style="font-weight:600;">${fmtRp(item.profit)}</td>
+                        <td class="num" style="font-weight:600; color:${item.profit < 0 ? '#b91c1c' : 'inherit'};">${fmtRp(item.profit)}</td>
                     </tr>`;
                 }).join('');
             }
@@ -9662,8 +9679,11 @@
             const totalCash = rpFiltered.filter(i => i.sumber === 'Cash').reduce((s, i) => s + i.profit, 0);
             const totalTempo = rpFiltered.filter(i => i.sumber === 'Tempo').reduce((s, i) => s + i.profit, 0);
             document.getElementById('rpTotalProfit').textContent = fmtRp(totalProfit);
+            document.getElementById('rpTotalProfit').style.color = totalProfit < 0 ? '#fecaca' : '';
             document.getElementById('rpTotalCash').textContent = fmtRp(totalCash);
+            document.getElementById('rpTotalCash').style.color = totalCash < 0 ? '#fecaca' : '';
             document.getElementById('rpTotalTempo').textContent = fmtRp(totalTempo);
+            document.getElementById('rpTotalTempo').style.color = totalTempo < 0 ? '#fecaca' : '';
             rpRebuildTglSelect();
 
             document.getElementById('rpPageInfo').textContent = 'Halaman ' + rpPage + ' dari ' + totalPages;
