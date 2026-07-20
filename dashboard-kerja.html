@@ -3561,7 +3561,7 @@
                 <thead>
                     <tr>
                         <th style="width:30px;"><input type="checkbox" id="ptSelectAll" title="Pilih Semua"></th>
-                        <th>Tgl Transaksi</th>
+                        <th style="width:70px;">Tgl Transaksi</th>
                         <th>No.Faktur</th>
                         <th>Customer</th>
                         <th>Alamat</th>
@@ -3569,15 +3569,16 @@
                         <th>Kategori</th>
                         <th>Produk</th>
                         <th class="num">Total Tagihan</th>
-                        <th>Jatuh Tempo</th>
+                        <th class="num">Sisa Tagihan</th>
+                        <th style="width:70px;">Jatuh Tempo</th>
                         <th>Status</th>
-                        <th>Tgl Cetak Tagihan</th>
-                        <th>Tgl Bayar</th>
+                        <th style="width:70px;">Tgl Bayar</th>
                         <th class="num">Total Dibayar</th>
+                        <th>Tgl Cetak Tgh</th>
                         <th>Keterangan</th>
                     </tr>
                 </thead>
-                <tbody id="ptTbody"><tr><td colspan="15" class="empty-msg">📂 Belum ada data piutang tempo.</td></tr></tbody>
+                <tbody id="ptTbody"><tr><td colspan="16" class="empty-msg">📂 Belum ada data piutang tempo.</td></tr></tbody>
             </table>
         </div>
         <div class="pagination">
@@ -4498,6 +4499,22 @@
             const parts = iso.split('-');
             if (parts.length !== 3) return iso;
             return parts[2] + '/' + parts[1] + '/' + parts[0];
+        }
+
+        // Menyingkat tanggal dd/mm/yyyy (atau yyyy-mm-dd) menjadi dd/mm/yy
+        function fmtTanggalYY(val) {
+            if (!val) return '';
+            let s = String(val);
+            if (s.includes('/')) {
+                const p = s.split('/');
+                if (p.length === 3) return p[0] + '/' + p[1] + '/' + p[2].slice(-2);
+                return s;
+            }
+            if (s.includes('-')) {
+                const p = s.split('-');
+                if (p.length === 3) return p[2] + '/' + p[1] + '/' + p[0].slice(-2);
+            }
+            return s;
         }
 
         // Format tanggal harian (disimpan sebagai "DD-MM") jadi dd/mm/yy, mengambil tahun dari kode bulan "YYYY-MM"
@@ -7790,14 +7807,15 @@
             const pageRows = rows.slice(start, end);
 
             if (pageRows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="15" class="empty-msg">📂 Belum ada data piutang tempo.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="16" class="empty-msg">📂 Belum ada data piutang tempo.</td></tr>';
             } else {
                 tbody.innerHTML = pageRows.map((r, i) => {
                     const realIdx = start + i;
                     const checked = ptChecked[r.noFaktur] ? 'checked' : '';
+                    const sisaTagihan = (r.total || 0) - (r.totalBayar || 0);
                     return `<tr class="${r.statusClass==='overdue' ? 'pt-row-overdue' : ''}">
                                 <td><input type="checkbox" class="pt-row-checkbox" data-faktur="${r.noFaktur}" ${checked}></td>
-                                <td>${fmtTanggal(r.tanggal)}</td>
+                                <td>${fmtTanggalYY(fmtTanggal(r.tanggal))}</td>
                                 <td><a href="#" class="pt-faktur-link" data-idx="${realIdx}" style="color:#1f4e78; font-weight:700; text-decoration:underline;">${piutangNotesMap[r.noFaktur] ? '📝 ' : ''}${r.noFaktur||''}</a></td>
                                 <td>${r.customer||''}</td>
                                 <td>${r.alamat||''}</td>
@@ -7805,11 +7823,12 @@
                                 <td><span class="badge pt-tercatat">${r.kategori==='fitri' ? 'Minyak Fitri' : 'Rupa Rupa'}</span></td>
                                 <td>${r.produkNama||'-'}</td>
                                 <td class="num">${fmtRp(r.total)}</td>
-                                <td>${r.jt || '-'}${r.overdueDays!=null ? ` <span style="color:#b91c1c;font-weight:700;">(${r.overdueDays} hr)</span>` : ''}</td>
+                                <td class="num">${r.statusClass === 'lunas' ? '-' : fmtRp(sisaTagihan)}</td>
+                                <td>${r.jt ? fmtTanggalYY(r.jt) : '-'}</td>
                                 <td><span class="badge pt-${r.statusClass}">${r.statusClass==='overdue' && r.overdueDays!=null ? `${r.overdueDays} hr/Overdue` : ptStatusLabel(r.statusClass)}</span></td>
-                                <td>${cetakTagihanMap[r.noFaktur] || '-'}</td>
                                 <td>${r.tanggalBayar || '-'}</td>
                                 <td class="num">${r.totalBayar!=null ? fmtRp(r.totalBayar) : '-'}</td>
+                                <td>${cetakTagihanMap[r.noFaktur] || '-'}</td>
                                 <td>${r.statusClass === 'lunas' ? '<span class="stempel-lunas">Lunas</span>' : (r.ketRaw || '-')}</td>
                             </tr>`;
                 }).join('');
