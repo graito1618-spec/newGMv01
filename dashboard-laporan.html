@@ -9597,6 +9597,11 @@
                         tglFaktur: info.tglFaktur,
                         sumber: sumber,
                         tglUangMasuk: tgl,
+                        // Nominal uang yang benar-benar diterima pada tanggal uang masuk ini
+                        // (Cash atau Tempo, sesuai baris ini) — dipakai untuk ditampilkan di
+                        // modal Detail Faktur supaya jelas berapa uang yang masuk, bukan cuma
+                        // tanggalnya saja.
+                        nominal: nominal,
                         produk: info.produk.length ? info.produk.join(', ') : '-',
                         sales: info.sales || '-',
                         qty: info.qty,
@@ -9608,6 +9613,8 @@
                         hargaBeliKosong: info.hargaBeliKosong,
                         belumLunas: belumLunas,
                         ketTitip: p.adaKetTitip,
+                        tagihan: p.tagihan,
+                        totalDiterima: totalDiterima,
                         // Beda besar antara profit versi Rekap Profit (dari uang yang
                         // diterima) vs profit versi Bank Data Penjualan (dari Harga
                         // Jual/Harga Beli) -> perlu dicek manual, biasanya karena uang
@@ -10285,6 +10292,7 @@
                         <div><strong>Sales:</strong> ${escapeHtml(item.sales || '-')}</div>
                         <div><strong>Sumber Uang:</strong> ${escapeHtml(sumberLabel)}</div>
                         <div><strong>Tgl Uang Masuk:</strong> ${fmtTanggal(item.tglUangMasuk)}</div>
+                        <div><strong>💵 Jumlah Uang Masuk (pada tanggal ini):</strong> <span style="font-weight:700;">${fmtRp(item.nominal || 0)}</span></div>
                     </div>
                     <hr style="margin:8px 0; border:none; border-top:1px solid var(--line);">
                     <div style="font-size:11px;font-weight:700;margin-bottom:4px;">📦 Rincian Produk (dari Bank Data Penjualan)</div>
@@ -10312,7 +10320,11 @@
                     <hr style="margin:8px 0; border:none; border-top:1px solid var(--line);">
                     <div style="font-size:11px; line-height:1.8;">
                         <div><strong>💰 Profit versi Rekap Profit (dari Data Uang Masuk):</strong> ${fmtRp(item.profit)}</div>
-                        ${Math.abs((item.profit||0) - totalProfit) > 0.5 ? `<div style="color:#b91c1c;">⚠️ Beda dengan total di atas (kemungkinan sebagian baris produk tidak ketemu di Bank Data Penjualan).</div>` : ''}
+                        ${item.belumLunas ? `
+                        <div style="background:#fff7ed; border:1px solid #fdba74; border-radius:6px; padding:8px 10px; margin-top:6px; font-size:10.5px; line-height:1.6; color:#c2410c;">
+                            🟠 <strong>Bukan error data.</strong> Faktur ini baru dibayar sebagian (Titip Rp ${fmtRp(item.totalDiterima || 0)} dari Tagihan Rp ${fmtRp(item.tagihan || 0)}). Profit yang tampil masih sementara — profit final (${fmtRp(totalProfit)} sesuai Bank Data Penjualan) baru bisa dihitung penuh setelah faktur ini lunas.
+                        </div>
+                        ` : Math.abs((item.profit||0) - totalProfit) > 0.5 ? `<div style="color:#b91c1c;">⚠️ Beda dengan total di atas (kemungkinan sebagian baris produk tidak ketemu di Bank Data Penjualan).</div>` : ''}
                     </div>
                 `;
             document.getElementById('detailModalGlobal').classList.add('show');
