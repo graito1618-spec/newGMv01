@@ -3204,7 +3204,7 @@
         </button>
         <button class="tab-btn" data-tab="tab9">
             <svg class="tab-icon" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><path d="M7 15l4-5 3 3 5-6"></path></svg>
-            Rekap Profit <span class="badge-tab" id="badgeRekapProfit">0</span>
+            Kontrol Uang Masuk <span class="badge-tab" id="badgeRekapProfit">0</span>
         </button>
         <button class="tab-btn" data-tab="tab10">
             <svg class="tab-icon" viewBox="0 0 24 24"><polyline points="3 7 10 14 14 10 21 17"></polyline><polyline points="15 17 21 17 21 11"></polyline></svg>
@@ -3969,6 +3969,7 @@
             <div class="field"><label>Bulan Uang Masuk</label><select id="fBulanRP"><option value="">Semua</option></select></div>
             <div class="field"><label>Tanggal Uang Masuk</label><input type="date" id="fTanggalRP"></div>
             <div class="field"><label>Sumber Uang</label><select id="fSumberRP"><option value="">Semua</option><option value="Cash">Cash Dropping</option><option value="Tempo">Piutang Tempo</option></select></div>
+            <div class="field"><label>Status</label><select id="fStatusRP"><option value="">Semua</option><option value="belum_lunas">🟠 Belum Lunas</option><option value="beda_data">🔺 Perlu Dicek (Beda Data)</option><option value="warn_any">Semua yang Ditandai</option></select></div>
             <div class="field" style="justify-content:flex-end;"><label>&nbsp;</label><button class="btn btn-reset" id="btnResetRP">↺ Reset</button></div>
             <div class="action-inline">
                 <button class="btn btn-outline" id="btnRefreshRP">🔄 Refresh</button>
@@ -3976,6 +3977,7 @@
             </div>
         </div>
         <div class="table-wrap">
+            <div id="rpRingkasanFlag" style="display:none; padding:8px 12px; font-size:11px; gap:14px; flex-wrap:wrap; align-items:center; background:#fffbeb; border:1px solid #fde68a; border-radius:6px 6px 0 0;"></div>
             <table>
                 <thead><tr><th>No.Faktur</th><th>Tgl Faktur</th><th>Sumber Uang</th><th>Tgl Uang Masuk</th><th>Produk</th><th>Sales</th><th class="num">Qty</th><th class="num" id="rpThProfit" style="cursor:pointer; user-select:none;" title="Klik untuk urutkan berdasarkan profit">Profit <span id="rpSortArrow"></span></th></tr></thead>
                 <tbody id="rpTableBody"><tr><td colspan="8" class="empty-msg">📂 Belum ada data. Pastikan Bank Data Penjualan &amp; Data Uang Masuk sudah diisi.</td></tr></tbody>
@@ -9641,11 +9643,15 @@
             const bulan = document.getElementById('fBulanRP').value;
             const tanggal = document.getElementById('fTanggalRP').value;
             const sumber = document.getElementById('fSumberRP').value;
+            const status = document.getElementById('fStatusRP').value;
             return rpRawData.filter(r => {
                 if (faktur && !r.noFaktur.toLowerCase().includes(faktur)) return false;
                 if (bulan && r.tglUangMasuk.slice(0, 7) !== bulan) return false;
                 if (tanggal && r.tglUangMasuk !== tanggal) return false;
                 if (sumber && r.sumber !== sumber) return false;
+                if (status === 'belum_lunas' && !r.belumLunas) return false;
+                if (status === 'beda_data' && !r.bedaBesar) return false;
+                if (status === 'warn_any' && !r.belumLunas && !r.bedaBesar && !r.hargaBeliKosong) return false;
                 return true;
             });
         }
@@ -9751,6 +9757,35 @@
             document.getElementById('rpNextPage').disabled = (rpPage >= totalPages);
             document.getElementById('rpTotalData').textContent = total + ' data';
             document.getElementById('badgeRekapProfit').textContent = total;
+
+            // Ringkasan cepat: hitung berapa faktur belum lunas / perlu dicek di
+            // dalam cakupan filter saat ini (bulan/tanggal/sumber/cari faktur),
+            // TANPA ikut filter Status, supaya selalu kelihatan totalnya berapa
+            // dan bisa diklik untuk langsung filter.
+            const basisRingkasan = rpRawData.filter(r => {
+                const faktur = document.getElementById('fFakturRP').value.trim().toLowerCase();
+                const bulan = document.getElementById('fBulanRP').value;
+                const tanggal = document.getElementById('fTanggalRP').value;
+                const sumber = document.getElementById('fSumberRP').value;
+                if (faktur && !r.noFaktur.toLowerCase().includes(faktur)) return false;
+                if (bulan && r.tglUangMasuk.slice(0, 7) !== bulan) return false;
+                if (tanggal && r.tglUangMasuk !== tanggal) return false;
+                if (sumber && r.sumber !== sumber) return false;
+                return true;
+            });
+            const jmlBelumLunas = basisRingkasan.filter(r => r.belumLunas).length;
+            const jmlBedaData = basisRingkasan.filter(r => r.bedaBesar).length;
+            const ringkasanEl = document.getElementById('rpRingkasanFlag');
+            if (jmlBelumLunas === 0 && jmlBedaData === 0) {
+                ringkasanEl.style.display = 'none';
+            } else {
+                ringkasanEl.style.display = 'flex';
+                ringkasanEl.innerHTML = `
+                    <span style="font-weight:700; color:#92400e;">🔍 Perlu dicek:</span>
+                    ${jmlBelumLunas > 0 ? `<span class="rp-ringkasan-klik" data-status="belum_lunas" style="cursor:pointer; color:#c2620a; font-weight:600; text-decoration:underline;">🟠 ${jmlBelumLunas} Belum Lunas</span>` : ''}
+                    ${jmlBedaData > 0 ? `<span class="rp-ringkasan-klik" data-status="beda_data" style="cursor:pointer; color:#b91c1c; font-weight:600; text-decoration:underline;">🔺 ${jmlBedaData} Beda Data</span>` : ''}
+                    <span style="color:#92400e; font-size:10px;">(klik untuk filter)</span>`;
+            }
         }
 
         async function refreshRekapProfit() {
@@ -10292,11 +10327,23 @@
             rpPage = 1;
             renderRekapProfit();
         });
+        document.getElementById('fStatusRP').addEventListener('change', function() {
+            rpPage = 1;
+            renderRekapProfit();
+        });
+        document.getElementById('rpRingkasanFlag').addEventListener('click', function(e) {
+            const target = e.target.closest('.rp-ringkasan-klik');
+            if (!target) return;
+            document.getElementById('fStatusRP').value = target.dataset.status;
+            rpPage = 1;
+            renderRekapProfit();
+        });
         document.getElementById('btnResetRP').addEventListener('click', function() {
             document.getElementById('fFakturRP').value = '';
             document.getElementById('fBulanRP').value = '';
             document.getElementById('fTanggalRP').value = '';
             document.getElementById('fSumberRP').value = '';
+            document.getElementById('fStatusRP').value = '';
             userSetBulan.rp = true;
             rpPage = 1;
             renderRekapProfit();
@@ -10310,7 +10357,7 @@
         });
         document.getElementById('btnRefreshRP').addEventListener('click', async function() {
             await refreshRekapProfit();
-            showToast('🔄 Rekap Profit diperbarui.', 'success');
+            showToast('🔄 Kontrol Uang Masuk diperbarui.', 'success');
         });
         document.getElementById('btnExportRP').addEventListener('click', function() {
             if (rpFiltered.length === 0) { showToast('Tidak ada data untuk diexport.', 'warning'); return; }
@@ -10339,7 +10386,7 @@
             a.click();
             a.remove();
             URL.revokeObjectURL(url);
-            showToast('✅ CSV Rekap Profit berhasil diunduh.', 'success');
+            showToast('✅ CSV Kontrol Uang Masuk berhasil diunduh.', 'success');
         });
 
         // ================================================================
