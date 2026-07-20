@@ -7880,6 +7880,39 @@
                 ptRenderTempoTable(); }
         });
 
+        // Kumpulkan SEMUA kemunculan pembayaran (cicilan/titip) untuk satu No.Faktur
+        // dari Data Uang Masuk (piutangDetail & cashDroppingDetail, semua bulan/hari),
+        // supaya modal Detail Faktur bisa menampilkan riwayat lengkap: kapan bayar,
+        // berapa titipnya, bukan cuma kemunculan TERAKHIR seperti yang dipakai untuk
+        // status ringkasan di tabel (ptBuildTempoRows / ptLatestByFaktur).
+        function ptHitungRiwayatFaktur(noFaktur) {
+            const target = normFaktur(noFaktur);
+            const riwayat = [];
+            Object.keys(ptIncomeByMonth).sort().forEach(bulan => {
+                const tahun = (bulan || '').slice(0, 4) || String(new Date().getFullYear());
+                const bulanNum = (bulan || '').slice(5, 7) || '01';
+                (ptIncomeByMonth[bulan] || []).forEach(day => {
+                    const dayPart = String(day.tanggal || '').split('-')[0] || '01';
+                    const tglTampil = `${dayPart.padStart(2,'0')}/${bulanNum}/${tahun}`;
+                    const tglISO = `${tahun}-${bulanNum}-${dayPart.padStart(2,'0')}`;
+                    const cek = (list, sumber) => {
+                        (list || []).forEach(d => {
+                            if (normFaktur(d.noFaktur) !== target) return;
+                            const cash = parseNumber(d.bayarCash || 0);
+                            const transfer = parseNumber(d.bayarTransfer || 0);
+                            const total = (d.totalBayar != null) ? parseNumber(d.totalBayar) : (cash + transfer);
+                            if (total <= 0) return;
+                            riwayat.push({ tglTampil, tglISO, sumber, cash, transfer, total, ket: d.ket || '' });
+                        });
+                    };
+                    cek(day.piutangDetail, 'Tempo');
+                    cek(day.cashDroppingDetail, 'Cash');
+                });
+            });
+            riwayat.sort((a, b) => a.tglISO.localeCompare(b.tglISO));
+            return riwayat;
+        }
+
         function ptShowDetailModal(r) {
             ptCurrentDetailFaktur = r.noFaktur;
             document.getElementById('ptDetailTitle').textContent = `🧾 Detail Faktur - ${r.noFaktur}`;
@@ -7895,6 +7928,43 @@
 
             const belumBayar = totalTagihanPakai - (r.totalBayar || 0);
             const catatanTersimpan = piutangNotesMap[r.noFaktur] || '';
+
+            // Riwayat lengkap semua pembayaran/titip untuk faktur ini (bisa lebih dari
+            // 1 kali kalau dicicil), dipakai supaya "kapan & berapa titipnya" jelas
+            // kebaca, bukan cuma kemunculan terakhir.
+            const riwayatBayar = ptHitungRiwayatFaktur(r.noFaktur);
+            const totalDariRiwayat = riwayatBayar.reduce((s, x) => s + x.total, 0);
+            const belumBayarRiwayat = totalTagihanPakai - totalDariRiwayat;
+            const riwayatHtml = riwayatBayar.length ? `
+                    <div style="font-weight:700; margin-bottom:4px;">💵 Riwayat Pembayaran (dari Data Uang Masuk):</div>
+                    <table style="width:100%; border-collapse:collapse; font-size:10.5px; margin-bottom:6px;">
+                        <thead>
+                            <tr style="border-bottom:1px solid var(--line);">
+                                <th style="text-align:left;padding:3px 4px;">Tanggal</th>
+                                <th style="text-align:left;padding:3px 4px;">Sumber</th>
+                                <th style="text-align:right;padding:3px 4px;">Cash</th>
+                                <th style="text-align:right;padding:3px 4px;">Transfer</th>
+                                <th style="text-align:right;padding:3px 4px;">Total</th>
+                                <th style="text-align:left;padding:3px 4px;">Ket</th>
+                            </tr>
+                        </thead>
+                        <tbody>${riwayatBayar.map(x => `<tr>
+                                <td style="padding:3px 4px;">${x.tglTampil}</td>
+                                <td style="padding:3px 4px;">${x.sumber === 'Cash' ? 'Cash Dropping' : 'Piutang Tempo'}</td>
+                                <td class="num" style="padding:3px 4px;">${x.cash > 0 ? fmtRp(x.cash) : '-'}</td>
+                                <td class="num" style="padding:3px 4px;">${x.transfer > 0 ? fmtRp(x.transfer) : '-'}</td>
+                                <td class="num" style="padding:3px 4px;font-weight:600;">${fmtRp(x.total)}</td>
+                                <td style="padding:3px 4px;${x.ket.toLowerCase().includes('titip') ? 'color:#c2410c;font-weight:600;' : ''}">${escapeHtml(x.ket || '-')}</td>
+                            </tr>`).join('')}</tbody>
+                        <tfoot>
+                            <tr style="border-top:1px solid var(--line); font-weight:700;">
+                                <td colspan="4" style="padding:3px 4px;">TOTAL SUDAH DIBAYAR</td>
+                                <td class="num" style="padding:3px 4px;">${fmtRp(totalDariRiwayat)}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                ` : `<div style="color:#6b7280; font-size:10.5px; margin-bottom:6px;">Belum ada catatan pembayaran untuk faktur ini di Data Uang Masuk.</div>`;
 
             const multiItemNoticeHtml = isMultiItem ? `
                     <div style="background:#fff7ed; border:1px solid #fdba74; border-radius:6px; padding:8px 10px; margin:8px 0; font-size:10.5px; line-height:1.6;">
@@ -7920,13 +7990,11 @@
                     </div>
                     ${multiItemNoticeHtml}
                     <hr style="margin:8px 0; border:none; border-top:1px solid var(--line);">
+                    <div><strong>Total Tagihan (awal transaksi):</strong> ${fmtRp(totalTagihanPakai)}</div>
+                    <hr style="margin:6px 0; border:none; border-top:1px dashed var(--line);">
+                    ${riwayatHtml}
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 18px;">
-                    <div><strong>Total Tagihan:</strong> ${fmtRp(totalTagihanPakai)}</div>
-                    <div><strong>Dibayar Cash:</strong> ${r.bayarCash!=null ? fmtRp(r.bayarCash) : '-'}</div>
-                    <div><strong>Dibayar Transfer:</strong> ${r.bayarTransfer!=null ? fmtRp(r.bayarTransfer) : '-'}</div>
-                    <div><strong>Total Dibayar:</strong> ${r.totalBayar!=null ? fmtRp(r.totalBayar) : '-'}</div>
-                    <div><strong>Sisa Tagihan:</strong> <span style="color:${belumBayar>0.5 ? '#b91c1c':'#1e7a46'}; font-weight:700;">${fmtRp(belumBayar)}</span></div>
-                    <div><strong>Tgl Bayar (perkiraan):</strong> ${r.tanggalBayar || '-'}</div>
+                    <div><strong>Sisa Tagihan:</strong> <span style="color:${belumBayarRiwayat>0.5 ? '#b91c1c':'#1e7a46'}; font-weight:700;">${fmtRp(belumBayarRiwayat)}</span></div>
                     </div>
                     <hr style="margin:8px 0; border:none; border-top:1px solid var(--line);">
                     <div><strong>Status:</strong> <span class="badge pt-${r.statusClass}">${ptStatusLabel(r.statusClass)}</span></div>
