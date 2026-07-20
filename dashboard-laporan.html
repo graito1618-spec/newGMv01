@@ -3117,6 +3117,25 @@
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.55; transform: scale(1.04); }
         }
+
+        /* Dot oranye "Belum Lunas" di Rekap Profit — pulse ring (mirip indikator
+           status online), bukan cuma kedip opacity, biar kelihatan hidup. */
+        @keyframes pulseDotRing {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
+            70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+        .dot-belum-lunas {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #f59e0b;
+            margin-left: 3px;
+            vertical-align: middle;
+            animation: pulseDotRing 1.4s infinite;
+            cursor: help;
+        }
         .data-baru-notif {
             display: inline-flex;
             align-items: center;
@@ -9454,10 +9473,11 @@
         // adalah nominal yang betulan masuk ke kas/rekening.
         function rpHitungBiayaFaktur(noFaktur) {
             const target = String(noFaktur || '').trim();
-            if (!target) return { qty: 0, hargaBeliXJumlah: 0, produk: [], sales: '', tglFaktur: '', hargaBeliKosong: false };
+            if (!target) return { qty: 0, hargaBeliXJumlah: 0, produk: [], sales: '', tglFaktur: '', hargaBeliKosong: false, profitBankData: 0 };
             let qty = 0,
                 hargaBeliXJumlah = 0,
-                hargaBeliKosong = false;
+                hargaBeliKosong = false,
+                profitBankData = 0;
             const produkSet = new Set();
             let sales = '',
                 tglFaktur = '';
@@ -9465,18 +9485,32 @@
                 if (normFaktur(item['No.Faktur']) !== normFaktur(target)) return;
                 const jml = parseNumber(item.Jumlah);
                 qty += jml;
-                if (item['Harga Beli'] !== undefined && item['Harga Beli'] !== '' && item['Harga Beli'] !== null) {
-                    hargaBeliXJumlah += parseNumber(item['Harga Beli']) * jml;
+                const hargaBeliAda = item['Harga Beli'] !== undefined && item['Harga Beli'] !== '' && item['Harga Beli'] !== null;
+                const hargaBeli = hargaBeliAda ? parseNumber(item['Harga Beli']) : 0;
+                if (hargaBeliAda) {
+                    hargaBeliXJumlah += hargaBeli * jml;
                 } else {
                     // Harga Beli belum diisi untuk baris ini -> biaya baris ini tidak
                     // terhitung (dianggap 0), perlu ditandai sebagai peringatan.
                     hargaBeliKosong = true;
                 }
+                // Profit versi Bank Data Penjualan (sama seperti perhitungan di modal
+                // detail faktur), dipakai untuk mendeteksi selisih besar dengan profit
+                // versi Rekap Profit (dari Data Uang Masuk).
+                const hargaJual = parseNumber(item['Harga Jual']);
+                const disc = parseNumber(item.Disc);
+                const totalBaris = item.Total !== undefined && item.Total !== '' ? parseNumber(item.Total) :
+                    (jml * hargaJual) - disc;
+                if (item.Profit !== undefined && item.Profit !== '' && item.Profit !== null) {
+                    profitBankData += parseNumber(item.Profit);
+                } else if (hargaBeliAda) {
+                    profitBankData += totalBaris - (hargaBeli * jml);
+                }
                 if (item.Produk) produkSet.add(item.Produk);
                 if (!sales && item.Sales) sales = item.Sales;
                 if (!tglFaktur && item.Tanggal) tglFaktur = item.Tanggal;
             });
-            return { qty, hargaBeliXJumlah, produk: Array.from(produkSet), sales, tglFaktur, hargaBeliKosong };
+            return { qty, hargaBeliXJumlah, produk: Array.from(produkSet), sales, tglFaktur, hargaBeliKosong, profitBankData };
         }
 
         async function rpBangunData() {
@@ -9507,7 +9541,8 @@
                             if (!det.noFaktur) return;
                             const nominal = (det.totalBayar != null) ? parseNumber(det.totalBayar) :
                                 (parseNumber(det.bayarCash || 0) + parseNumber(det.bayarTransfer || 0));
-                            occurrences.push({ det, sumber, tglUangMasuk, nominal });
+                            const tagihan = det.tagihan !== undefined && det.tagihan !== '' ? parseNumber(det.tagihan) : 0;
+                            occurrences.push({ det, sumber, tglUangMasuk, nominal, tagihan, ket: det.ket || '' });
                         });
                     };
                     kumpulkan(day.piutangDetail, 'Tempo');
@@ -9528,7 +9563,7 @@
                 const key = normFaktur(o.det.noFaktur);
                 if (!key) return;
                 if (!perFaktur[key]) perFaktur[key] = { noFakturAsli: o.det.noFaktur, cash: 0, tempo: 0,
-                    tglCash: '', tglTempo: '' };
+                    tglCash: '', tglTempo: '', tagihan: 0, adaKetTitip: false };
                 const p = perFaktur[key];
                 if (o.sumber === 'Cash') {
                     p.cash += o.nominal;
@@ -9537,6 +9572,8 @@
                     p.tempo += o.nominal;
                     if (!p.tglTempo || o.tglUangMasuk >= p.tglTempo) p.tglTempo = o.tglUangMasuk;
                 }
+                if (o.tagihan > p.tagihan) p.tagihan = o.tagihan;
+                if (String(o.ket).toLowerCase().includes('titip')) p.adaKetTitip = true;
             });
 
             const rows = [];
@@ -9546,8 +9583,13 @@
                 if (totalDiterima <= 0) return;
                 const info = rpHitungBiayaFaktur(p.noFakturAsli);
                 const profitTotal = totalDiterima - info.hargaBeliXJumlah;
+                // Belum lunas: uang yang diterima masih kurang dari Tagihan faktur
+                // (baru dibayar sebagian / dititip). Ini BUKAN error data — profit
+                // memang belum bisa dihitung penuh sampai pelunasan selesai.
+                const belumLunas = p.tagihan > 0 && (p.tagihan - totalDiterima) > 1;
                 const buatBaris = (sumber, nominal, tgl) => {
                     if (nominal <= 0) return;
+                    const profitBaris = profitTotal * (nominal / totalDiterima);
                     rows.push({
                         noFaktur: String(p.noFakturAsli).trim(),
                         tglFaktur: info.tglFaktur,
@@ -9560,8 +9602,18 @@
                         // dibagi proporsional sesuai porsi nominal masing-masing, supaya
                         // kartu Total Cash / Total Tempo tetap akurat sekaligus totalnya
                         // (Total Profit) tetap benar (jumlah keduanya = profitTotal).
-                        profit: profitTotal * (nominal / totalDiterima),
-                        hargaBeliKosong: info.hargaBeliKosong
+                        profit: profitBaris,
+                        hargaBeliKosong: info.hargaBeliKosong,
+                        belumLunas: belumLunas,
+                        ketTitip: p.adaKetTitip,
+                        // Beda besar antara profit versi Rekap Profit (dari uang yang
+                        // diterima) vs profit versi Bank Data Penjualan (dari Harga
+                        // Jual/Harga Beli) -> perlu dicek manual, biasanya karena uang
+                        // yang diterima belum sesuai nilai faktur (baru dibayar
+                        // sebagian) atau ada baris produk yang tidak ketemu. Kalau
+                        // sudah ketahuan sebabnya "belum lunas", tidak perlu ditandai
+                        // sebagai error lagi di sini.
+                        bedaBesar: !belumLunas && Math.abs(profitBaris - info.profitBankData) > 0.5
                     });
                 };
                 buatBaris('Cash', p.cash, p.tglCash);
@@ -9661,15 +9713,23 @@
                     const warn = item.hargaBeliKosong ?
                         ' <span title="Harga Beli belum diisi untuk sebagian/semua item — profit faktur ini belum terhitung penuh" style="cursor:help;">⚠️</span>' :
                         '';
-                    return `<tr>
-                        <td><a href="#" class="rp-faktur-link" data-idx="${start + i}" style="color:inherit; font-weight:600; text-decoration:none;">${escapeHtml(item.noFaktur)}</a>${warn}</td>
+                    const warnBeda = item.bedaBesar ?
+                        ' <span title="Profit versi Rekap Profit beda jauh dari profit versi Bank Data Penjualan — cek detail fakturnya" style="cursor:help;">🔺</span>' :
+                        '';
+                    const warnBelumLunas = item.belumLunas ?
+                        ` <span class="dot-belum-lunas" title="Faktur ini baru dibayar sebagian (belum lunas) — profit akan sesuai setelah pelunasan penuh, bukan error"></span>` :
+                        '';
+                    const rowStyle = item.bedaBesar ? ' style="color:#b91c1c;"' :
+                        item.belumLunas ? ' style="color:#c2620a;"' : '';
+                    return `<tr${rowStyle}>
+                        <td><a href="#" class="rp-faktur-link" data-idx="${start + i}" style="color:inherit; font-weight:600; text-decoration:none;">${escapeHtml(item.noFaktur)}</a>${warn}${warnBeda}${warnBelumLunas}</td>
                         <td>${fmtTanggal(item.tglFaktur)}</td>
                         <td>${label}</td>
                         <td>${fmtTanggal(item.tglUangMasuk)}</td>
                         <td>${escapeHtml(item.produk)}</td>
                         <td>${escapeHtml(item.sales)}</td>
                         <td class="num">${item.qty}</td>
-                        <td class="num" style="font-weight:600; color:${item.profit < 0 ? '#b91c1c' : 'inherit'};">${fmtRp(item.profit)}</td>
+                        <td class="num" style="font-weight:600; color:${(!item.bedaBesar && !item.belumLunas && item.profit < 0) ? '#b91c1c' : 'inherit'};">${fmtRp(item.profit)}</td>
                     </tr>`;
                 }).join('');
             }
