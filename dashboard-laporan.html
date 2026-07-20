@@ -9638,6 +9638,22 @@
                 bulanSel.value = ''; }
         }
 
+        // Data untuk KARTU RINGKASAN (Total Profit, Dari Cash Dropping, Dari
+        // Piutang Tempo, Profit Tanggal) SENGAJA hanya ikut filter Bulan Uang
+        // Masuk saja — TIDAK ikut filter Cari Faktur/Tanggal/Sumber Uang/Status.
+        // Supaya kartu selalu menunjukkan angka total yang sebenarnya (satu bulan
+        // penuh), bukan ikut menyempit saat kita sedang menyaring baris-baris
+        // yang mau dicek manual (mis. filter Status "Belum Lunas"), yang kalau
+        // ikut kefilter bikin angkanya kelihatan minus/salah padahal cuma
+        // sebagian data yang lagi ditampilkan.
+        function rpGetFilteredUntukKartu() {
+            const bulan = document.getElementById('fBulanRP').value;
+            return rpRawData.filter(r => {
+                if (bulan && r.tglUangMasuk.slice(0, 7) !== bulan) return false;
+                return true;
+            });
+        }
+
         function rpGetFiltered() {
             const faktur = document.getElementById('fFakturRP').value.trim().toLowerCase();
             const bulan = document.getElementById('fBulanRP').value;
@@ -9659,7 +9675,8 @@
         function rpRebuildTglSelect() {
             const sel = document.getElementById('rpTglPilih');
             if (!sel) return;
-            const uniqueDates = Array.from(new Set(rpFiltered.map(i => i.tglUangMasuk).filter(Boolean))).sort()
+            const dataKartu = rpGetFilteredUntukKartu();
+            const uniqueDates = Array.from(new Set(dataKartu.map(i => i.tglUangMasuk).filter(Boolean))).sort()
                 .reverse();
             if (!uniqueDates.length) {
                 sel.innerHTML = '';
@@ -9676,7 +9693,8 @@
             const sel = document.getElementById('rpTglPilih');
             const rpTglEl = document.getElementById('rpTglTerakhir');
             if (!sel || !rpTglEl) return;
-            const profitHariItu = rpFiltered.filter(i => i.tglUangMasuk === sel.value).reduce((s, i) => s + i.profit,
+            const dataKartu = rpGetFilteredUntukKartu();
+            const profitHariItu = dataKartu.filter(i => i.tglUangMasuk === sel.value).reduce((s, i) => s + i.profit,
                 0);
             rpTglEl.textContent = fmtRp(profitHariItu);
         }
@@ -9741,9 +9759,10 @@
             }
             window._rpRowsCache = rpFiltered;
 
-            const totalProfit = rpFiltered.reduce((s, i) => s + i.profit, 0);
-            const totalCash = rpFiltered.filter(i => i.sumber === 'Cash').reduce((s, i) => s + i.profit, 0);
-            const totalTempo = rpFiltered.filter(i => i.sumber === 'Tempo').reduce((s, i) => s + i.profit, 0);
+            const dataKartu = rpGetFilteredUntukKartu();
+            const totalProfit = dataKartu.reduce((s, i) => s + i.profit, 0);
+            const totalCash = dataKartu.filter(i => i.sumber === 'Cash').reduce((s, i) => s + i.profit, 0);
+            const totalTempo = dataKartu.filter(i => i.sumber === 'Tempo').reduce((s, i) => s + i.profit, 0);
             document.getElementById('rpTotalProfit').textContent = fmtRp(totalProfit);
             document.getElementById('rpTotalProfit').style.color = totalProfit < 0 ? '#fecaca' : '';
             document.getElementById('rpTotalCash').textContent = fmtRp(totalCash);
