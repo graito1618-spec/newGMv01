@@ -3593,6 +3593,7 @@
             <div class="field" style="flex:1; min-width:180px;">
                 <label>Daftar Faktur Dipilih dari Cek Piutang &amp; Cek Cash</label>
                 <span style="font-size:11px; font-weight:600;" id="tagihanJumlahTerpilih2">0 faktur</span>
+                <span style="font-size:10px; font-weight:600; color:#1e7a46; display:none;" id="tagihanLunasSkipNotice"></span>
             </div>
             <div class="field" style="min-width:100px;">
                 <label>Tanggal Cetak</label>
@@ -7630,6 +7631,55 @@
             return map;
         }
 
+        // PENTING: satu No.Faktur bisa dibayar berkali-kali (dicicil / titip beberapa
+        // kali di tanggal berbeda). ptLatestByFaktur() di atas cuma mengambil SATU
+        // kemunculan pembayaran TERAKHIR, sehingga cicilan-cicilan sebelumnya "hilang"
+        // dari total dibayar — inilah yang bikin Status & Sisa Tagihan di tabel Cek
+        // Piutang bisa salah (faktur yang sebenarnya sudah lunas masih tercatat
+        // Overdue dengan sisa tagihan yang salah).
+        //
+        // ptSumByFaktur() menjumlahkan SEMUA kemunculan pembayaran per No.Faktur
+        // (persis seperti logika ptHitungRiwayatFaktur yang dipakai modal), supaya
+        // totalBayar/bayarCash/bayarTransfer akurat. Untuk field yang sifatnya
+        // "status terkini" (ket, jt, namaToko) tetap diambil dari kemunculan PALING
+        // BARU (berdasarkan tanggal asli, bukan cuma bulan), supaya keterangan yang
+        // ditampilkan tetap relevan dengan kondisi terbaru.
+        function ptSumByFaktur() {
+            const map = {};
+            Object.keys(ptIncomeByMonth).sort().forEach(bulan => {
+                const tahun = (bulan || '').slice(0, 4) || String(new Date().getFullYear());
+                const bulanNum = (bulan || '').slice(5, 7) || '01';
+                (ptIncomeByMonth[bulan] || []).forEach(day => {
+                    const dayPart = String(day.tanggal || '').split('-')[0] || '01';
+                    const tglISO = `${tahun}-${bulanNum}-${dayPart.padStart(2,'0')}`;
+                    (day.piutangDetail || []).forEach(d => {
+                        const key = normFaktur(d.noFaktur);
+                        if (!key) return;
+                        if (!map[key]) map[key] = { totalBayar: 0, bayarCash: 0, bayarTransfer: 0, jt: '',
+                            ket: '', namaToko: '', _bulan: '', _tanggalHari: '', _tglISO: '' };
+                        const p = map[key];
+                        const cash = parseNumber(d.bayarCash || 0);
+                        const transfer = parseNumber(d.bayarTransfer || 0);
+                        const total = (d.totalBayar != null) ? parseNumber(d.totalBayar) : (cash + transfer);
+                        p.totalBayar += total;
+                        p.bayarCash += cash;
+                        p.bayarTransfer += transfer;
+                        // Metadata tampilan (ket/jt/namaToko/tgl bayar) diambil dari kemunculan
+                        // paling baru berdasarkan tanggal asli (bukan cuma bulan).
+                        if (!p._tglISO || tglISO >= p._tglISO) {
+                            p._tglISO = tglISO;
+                            p._bulan = bulan;
+                            p._tanggalHari = day.tanggal;
+                            p.jt = d.jt || p.jt;
+                            p.ket = d.ket || p.ket;
+                            p.namaToko = d.namaToko || p.namaToko;
+                        }
+                    });
+                });
+            });
+            return map;
+        }
+
         function ptStatusClassFromKet(ket) {
             const k = (ket || '').toLowerCase();
             if (k.includes('lunas') && !k.includes('belum')) return 'lunas';
@@ -7645,8 +7695,22 @@
             return labels[cls] || cls;
         }
 
+        // Satu No.Faktur bisa punya beberapa baris produk (banyak baris di salesData),
+        // sementara pembayaran (totalBayar) selalu tercatat per-FAKTUR, bukan per-baris
+        // produk. Supaya "Sisa Tagihan" per baris tidak asal dikurangi begitu saja
+        // (yang bisa menghasilkan angka minus/salah kalau ada >1 baris produk), sisa
+        // tagihan faktur dibagi proporsional sesuai porsi nilai tiap baris produk.
+        // Kalau faktur sudah lunas penuh, hasilnya otomatis 0 untuk semua barisnya.
+        function ptSisaTagihanBaris(r) {
+            const totalFaktur = r.totalFaktur || r.total || 0;
+            const sisaFaktur = Math.max(0, totalFaktur - (r.totalBayar || 0));
+            if (totalFaktur <= 0) return 0;
+            const proporsi = (r.total || 0) / totalFaktur;
+            return sisaFaktur * proporsi;
+        }
+
         function ptBuildTempoRows() {
-            const piutangMap = ptLatestByFaktur(ptFlattenPiutang());
+            const piutangMap = ptSumByFaktur();
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const rows = [];
@@ -7712,7 +7776,8 @@
                         overdueDays = ptDaysBetween(today, jtDate); }
                 }
                 rows.push({ tanggal: r.Tanggal, noFaktur: r['No.Faktur'], customer: r.Customer, alamat: r
-                        .Alamat, sales: r.Sales, total: parseNumber(r.Total), jt, statusClass: cls,
+                        .Alamat, sales: r.Sales, total: parseNumber(r.Total), totalFaktur: totalTagihanFaktur,
+                    jt, statusClass: cls,
                     ketRaw, bayarCash, bayarTransfer, namaTokoUM, produkNama: r.Produk, totalBayar,
                     overdueDays, tanggalBayar, produk: r.Produk, kategori: ptIsFitri(r.Produk) ? 'fitri' :
                         'rupa', pembayaran: r.Pembayaran || 'Tempo' });
@@ -7812,7 +7877,7 @@
                 tbody.innerHTML = pageRows.map((r, i) => {
                     const realIdx = start + i;
                     const checked = ptChecked[r.noFaktur] ? 'checked' : '';
-                    const sisaTagihan = (r.total || 0) - (r.totalBayar || 0);
+                    const sisaTagihan = ptSisaTagihanBaris(r);
                     return `<tr class="${r.statusClass==='overdue' ? 'pt-row-overdue' : ''}">
                                 <td><input type="checkbox" class="pt-row-checkbox" data-faktur="${r.noFaktur}" ${checked}></td>
                                 <td>${fmtTanggalYY(fmtTanggal(r.tanggal))}</td>
@@ -7902,8 +7967,9 @@
         // Kumpulkan SEMUA kemunculan pembayaran (cicilan/titip) untuk satu No.Faktur
         // dari Data Uang Masuk (piutangDetail & cashDroppingDetail, semua bulan/hari),
         // supaya modal Detail Faktur bisa menampilkan riwayat lengkap: kapan bayar,
-        // berapa titipnya, bukan cuma kemunculan TERAKHIR seperti yang dipakai untuk
-        // status ringkasan di tabel (ptBuildTempoRows / ptLatestByFaktur).
+        // berapa titipnya. (ptBuildTempoRows sekarang juga sudah menjumlahkan semua
+        // kemunculan lewat ptSumByFaktur(), jadi status ringkasan di tabel & di sini
+        // saling konsisten.)
         function ptHitungRiwayatFaktur(noFaktur) {
             const target = normFaktur(noFaktur);
             const riwayat = [];
@@ -8478,9 +8544,23 @@
             }));
         }
 
+        // Nominal yang seharusnya DICETAK/DITAGIH ke customer: untuk faktur piutang,
+        // pakai Sisa Tagihan (proporsional per baris produk), BUKAN Total Tagihan awal
+        // — supaya faktur yang sudah lunas tidak ikut tercetak seolah belum dibayar.
+        // Untuk faktur cash (Cek Cash), tetap pakai total apa adanya karena cash tidak
+        // punya mekanisme cicilan/titip seperti piutang.
+        function ptNominalTagih(r) {
+            if (r.tipe === 'piutang') return ptSisaTagihanBaris(r);
+            return parseNumber(r.total);
+        }
+
         function renderTagihanDariPiutang() {
             const rows = ptBuildTempoRows();
-            const piutangRows = rows.filter(r => ptChecked[r.noFaktur] === true).map(r => ({ ...r, tipe: 'piutang' }));
+            const piutangRowsAll = rows.filter(r => ptChecked[r.noFaktur] === true).map(r => ({ ...r, tipe: 'piutang' }));
+            // Faktur piutang yang Sisa Tagihannya sudah Rp0 (lunas) TIDAK ikut dicetak —
+            // tidak masuk akal menagih ulang customer yang sudah lunas.
+            const piutangLunasSkip = piutangRowsAll.filter(r => ptNominalTagih(r) <= 0.5);
+            const piutangRows = piutangRowsAll.filter(r => ptNominalTagih(r) > 0.5);
             const cashRows = buildCashTagihanRows();
             const selectedRows = [...piutangRows, ...cashRows];
 
@@ -8492,6 +8572,17 @@
                 '0') + '/' + now.getFullYear();
             document.getElementById('tagihanTanggalCetak').textContent = tglCetak;
             document.getElementById('tagihanJumlahTerpilih2').textContent = selectedRows.length + ' faktur';
+
+            const skipNotice = document.getElementById('tagihanLunasSkipNotice');
+            if (skipNotice) {
+                const skipFakturUnik = new Set(piutangLunasSkip.map(r => r.noFaktur)).size;
+                if (skipFakturUnik > 0) {
+                    skipNotice.textContent = `✅ ${skipFakturUnik} faktur sudah lunas — tidak ikut dicetak`;
+                    skipNotice.style.display = 'inline';
+                } else {
+                    skipNotice.style.display = 'none';
+                }
+            }
 
             if (selectedRows.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="11" class="empty-msg">Belum ada faktur dipilih dari Cek Piutang / Cek Cash.</td></tr>';
@@ -8509,7 +8600,7 @@
             let total = 0;
             let html = '';
             selectedRows.forEach((r, i) => {
-                const nominal = parseNumber(r.total);
+                const nominal = ptNominalTagih(r);
                 total += nominal;
                 const produkNama = r.produk || r.produkNama || '';
                 const isFitri = produkNama.toLowerCase().includes('fitri');
@@ -8559,20 +8650,26 @@
         // TOMBOL KIRIM KE CETAK (Tab 4 -> Tab 6)
         // ================================================================
         function sendSelectedToTab6() {
-            const piutangRows = ptBuildTempoRows().filter(r => ptChecked[r.noFaktur] === true).map(r => ({ ...r, tipe: 'piutang' }));
+            const piutangRowsAll = ptBuildTempoRows().filter(r => ptChecked[r.noFaktur] === true).map(r => ({ ...r, tipe: 'piutang' }));
+            const piutangLunasSkip = piutangRowsAll.filter(r => ptNominalTagih(r) <= 0.5);
+            const piutangRows = piutangRowsAll.filter(r => ptNominalTagih(r) > 0.5);
             const cashRows = buildCashTagihanRows();
             const selectedRows = [...piutangRows, ...cashRows];
 
             if (selectedRows.length === 0) {
-                showToast('⚠️ Pilih minimal 1 faktur di Tab 4 (Cek Piutang) atau Tab 3 (Cek Cash) terlebih dahulu!',
-                    'warning');
+                if (piutangLunasSkip.length > 0) {
+                    showToast('✅ Faktur yang dipilih sudah lunas semua — tidak ada yang perlu dicetak.', 'success');
+                } else {
+                    showToast('⚠️ Pilih minimal 1 faktur di Tab 4 (Cek Piutang) atau Tab 3 (Cek Cash) terlebih dahulu!',
+                        'warning');
+                }
                 return;
             }
 
             let total = 0;
             let html = '';
             selectedRows.forEach((r, i) => {
-                const nominal = parseNumber(r.total);
+                const nominal = ptNominalTagih(r);
                 total += nominal;
                 html += `<tr>
                             <td class="center">${i+1}</td>
@@ -8587,7 +8684,8 @@
 
             document.getElementById('ptSendConfirmBody').innerHTML = html;
             document.getElementById('ptSendConfirmTotal').textContent = fmtRp(total);
-            document.getElementById('ptSendConfirmCount').textContent = selectedRows.length + ' faktur';
+            document.getElementById('ptSendConfirmCount').textContent = selectedRows.length + ' faktur' +
+                (piutangLunasSkip.length > 0 ? ` (${new Set(piutangLunasSkip.map(r=>r.noFaktur)).size} faktur lunas dilewati)` : '');
             document.getElementById('ptSendConfirmModal').classList.add('show');
         }
 
