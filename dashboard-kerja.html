@@ -1083,7 +1083,7 @@
         .sales-card-stempel-lunas {
             position: absolute;
             top: 8px;
-            right: 10px;
+            right: 78px;
             display: inline-block;
             color: #c0392b;
             border: 2px solid #c0392b;
@@ -8480,7 +8480,7 @@
             }).join('');
         }
 
-        let tab3ViewMode = localStorage.getItem('tab3ViewMode') === 'card' ? 'card' : 'table';
+        let tab3ViewMode = localStorage.getItem('tab3ViewMode') === 'table' ? 'table' : 'card';
         function applyTab3ViewMode() {
             const isCard = tab3ViewMode === 'card';
             const tableWrap = document.getElementById('tab3TableWrap');
