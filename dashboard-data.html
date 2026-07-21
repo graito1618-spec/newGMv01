@@ -4626,8 +4626,8 @@
         </div>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>No.Faktur</th><th>Tgl Faktur</th><th>Sumber Uang</th><th>Tgl Uang Masuk</th><th>Produk</th><th>Sales</th><th class="num">Qty</th><th class="num">Profit</th></tr></thead>
-                <tbody id="rpTableBody"><tr><td colspan="8" class="empty-msg">📂 Belum ada data. Pastikan Bank Data Penjualan &amp; Data Uang Masuk sudah diisi.</td></tr></tbody>
+                <thead><tr><th>No.Faktur</th><th>Tgl Faktur</th><th>Sumber Uang</th><th>Tgl Uang Masuk</th><th>Produk</th><th>Sales</th><th class="num">Qty</th><th class="num">Uang Diterima</th><th class="num">Profit</th></tr></thead>
+                <tbody id="rpTableBody"><tr><td colspan="9" class="empty-msg">📂 Belum ada data. Pastikan Bank Data Penjualan &amp; Data Uang Masuk sudah diisi.</td></tr></tbody>
             </table>
         </div>
         <div class="pagination">
@@ -10130,35 +10130,65 @@
         let rpPage = 1;
         const rpRowsPerPage = 10;
 
-        function rpHitungProfitFaktur(noFaktur) {
+        // uangDiterimaMap: Map<noFaktur, totalUangDiterima> yang dibangun SEKALI oleh
+        // rpBangunData() (bukan di-scan ulang tiap panggilan) supaya tidak O(n²).
+        function rpHitungProfitFaktur(noFaktur, uangDiterimaMap) {
             const target = String(noFaktur || '').trim();
-            if (!target) return { qty: 0, profit: 0, produk: [], sales: '', tglFaktur: '' };
-            let qty = 0,
-                profit = 0;
+            if (!target) return { qty: 0, profit: 0, produk: [], sales: '', tglFaktur: '', uangDiterima: 0 };
+            let qty = 0;
+            let totalHargaBeli = 0;
             const produkSet = new Set();
             let sales = '',
                 tglFaktur = '';
+            // 1. Ambil detail dari Bank Data Penjualan (qty & harga beli)
             salesData.forEach(item => {
                 if (String(item['No.Faktur'] || '').trim() !== target) return;
                 const jml = parseNumber(item.Jumlah);
                 qty += jml;
-                if (item.Profit !== undefined && item.Profit !== '' && item.Profit !== null) {
-                    profit += parseNumber(item.Profit);
-                } else if (item['Harga Beli'] !== undefined && item['Harga Beli'] !== '' && item[
-                        'Harga Beli'] !== null) {
-                    profit += (parseNumber(item['Harga Jual']) - parseNumber(item['Harga Beli'])) * jml;
-                }
+                const hb = parseNumber(item['Harga Beli']);
+                if (hb) totalHargaBeli += hb * jml;
                 if (item.Produk) produkSet.add(item.Produk);
                 if (!sales && item.Sales) sales = item.Sales;
                 if (!tglFaktur && item.Tanggal) tglFaktur = item.Tanggal;
             });
-            return { qty, profit, produk: Array.from(produkSet), sales, tglFaktur };
+            // 2. Uang yang BENAR-BENAR diterima, dari Data Uang Masuk (Tab 2), diambil
+            // dari peta yang sudah dihitung sekali di rpBangunData().
+            const totalUangDiterima = (uangDiterimaMap && uangDiterimaMap.get(target)) || 0;
+            const profit = totalUangDiterima - totalHargaBeli;
+            return {
+                qty,
+                profit,
+                produk: Array.from(produkSet),
+                sales,
+                tglFaktur,
+                uangDiterima: totalUangDiterima
+            };
         }
 
         async function rpBangunData() {
             const rows = [];
             let semuaBulan = [];
             try { semuaBulan = await db.cashIncome.toArray(); } catch (e) { semuaBulan = []; }
+
+            // Pass 1: kumpulkan total Uang Diterima per No.Faktur dalam satu kali scan,
+            // supaya rpHitungProfitFaktur tidak perlu men-scan ulang semua data tiap faktur.
+            const uangDiterimaMap = new Map();
+            const tambahUangDiterima = (list) => {
+                (list || []).forEach(det => {
+                    const key = String(det.noFaktur || '').trim();
+                    if (!key) return;
+                    const nilai = (parseNumber(det.minyakCash) || 0) + (parseNumber(det.minyakTransfer) || 0) +
+                        (parseNumber(det.rupaCash) || 0) + (parseNumber(det.rupaTransfer) || 0);
+                    uangDiterimaMap.set(key, (uangDiterimaMap.get(key) || 0) + nilai);
+                });
+            };
+            semuaBulan.forEach(rec => {
+                (rec.data || []).forEach(day => {
+                    tambahUangDiterima(day.piutangDetail);
+                    tambahUangDiterima(day.cashDroppingDetail);
+                });
+            });
+
             semuaBulan.forEach(rec => {
                 const tahun = (rec.bulan || '').slice(0, 4) || String(new Date().getFullYear());
                 const bulanFallback = (rec.bulan || '').slice(5, 7) || '01';
@@ -10170,7 +10200,7 @@
                     const proses = (list, sumber) => {
                         (list || []).forEach(det => {
                             if (!det.noFaktur) return;
-                            const info = rpHitungProfitFaktur(det.noFaktur);
+                            const info = rpHitungProfitFaktur(det.noFaktur, uangDiterimaMap);
                             rows.push({
                                 noFaktur: String(det.noFaktur).trim(),
                                 tglFaktur: info.tglFaktur || (det.tglFaktur ? toDateKey(det.tglFaktur) : ''),
@@ -10179,6 +10209,7 @@
                                 produk: info.produk.length ? info.produk.join(', ') : '-',
                                 sales: info.sales || det.sales || '-',
                                 qty: info.qty,
+                                uangDiterima: info.uangDiterima,
                                 profit: info.profit
                             });
                         });
@@ -10240,7 +10271,7 @@
             const tbody = document.getElementById('rpTableBody');
             if (pageRows.length === 0) {
                 tbody.innerHTML =
-                    '<tr><td colspan="8" class="empty-msg">📂 Tidak ada data yang sesuai filter.</td></tr>';
+                    '<tr><td colspan="9" class="empty-msg">📂 Tidak ada data yang sesuai filter.</td></tr>';
             } else {
                 tbody.innerHTML = pageRows.map((item, i) => {
                     const label = item.sumber === 'Cash' ? 'Cash Dropping' : 'Piutang Tempo';
@@ -10252,7 +10283,8 @@
                         <td>${escapeHtml(item.produk)}</td>
                         <td>${escapeHtml(item.sales)}</td>
                         <td class="num">${item.qty}</td>
-                        <td class="num" style="font-weight:600;">${fmtRp(item.profit)}</td>
+                        <td class="num">${fmtRp(item.uangDiterima)}</td>
+                        <td class="num" style="font-weight:600; color:${item.profit < 0 ? '#b91c1c' : '#15803d'};">${fmtRp(item.profit)}</td>
                     </tr>`;
                 }).join('');
             }
@@ -10834,7 +10866,7 @@
         document.getElementById('btnExportRP').addEventListener('click', function() {
             if (rpFiltered.length === 0) { showToast('Tidak ada data untuk diexport.', 'warning'); return; }
             const header = ['No.Faktur', 'Tgl Faktur', 'Sumber Uang', 'Tgl Uang Masuk', 'Produk', 'Sales',
-                'Qty', 'Profit'
+                'Qty', 'Uang Diterima', 'Profit'
             ];
             const rows = rpFiltered.map(item => [
                 item.noFaktur,
@@ -10844,6 +10876,7 @@
                 item.produk,
                 item.sales,
                 item.qty,
+                Math.round(item.uangDiterima),
                 Math.round(item.profit)
             ]);
             const delimiter = ';';
