@@ -994,20 +994,23 @@
             <table>
                 <thead>
                     <tr>
-                        <th>No</th>
-                        <th>Tanggal</th>
-                        <th>No.Faktur</th>
-                        <th>Sales</th>
-                        <th>Nama Toko</th>
-                        <th>Alamat</th>
-                        <th>Kategori</th>
-                        <th class="num">Tagihan</th>
-                        <th class="num">Bayar Cash</th>
-                        <th class="num">Bayar Transfer</th>
-                        <th>Keterangan</th>
+                        <th>NO.FAKTUR</th>
+                        <th>TGL TRANSAKSI</th>
+                        <th>CUSTOMER</th>
+                        <th>ALAMAT</th>
+                        <th>SALES</th>
+                        <th>KATEGORI</th>
+                        <th>PRODUK</th>
+                        <th class="num">TOTAL TAGIHAN</th>
+                        <th class="num">SISA TAGIHAN</th>
+                        <th>JATUH TEMPO</th>
+                        <th>STATUS</th>
+                        <th>TGL BAYAR</th>
+                        <th class="num">TOTAL DIBAYAR</th>
+                        <th>KETERANGAN</th>
                     </tr>
                 </thead>
-                <tbody id="piutangUangMasukBody"><tr><td colspan="11" class="empty-msg">📂 Tidak ada data piutang tempo dari Data Uang Masuk.</td></tr></tbody>
+                <tbody id="piutangUangMasukBody"><tr><td colspan="14" class="empty-msg">📂 Tidak ada data piutang tempo dari Data Uang Masuk.</td></tr></tbody>
             </table>
         </div>
         <div class="pagination" id="piutangUangMasukPager">
@@ -1918,6 +1921,23 @@
     function ptParseDMY(str){ if(!str) return null; const m=String(str).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); if(!m) return null; return new Date(parseInt(m[3]),parseInt(m[2])-1,parseInt(m[1])); }
     function ptDaysBetween(a,b){ return Math.round((a-b)/(1000*60*60*24)); }
     function ptIsFitri(produk){ return (produk||'').toLowerCase().includes('fitri'); }
+    // Ambil daftar Produk & Kategori ASLI per No.Faktur dari Bank Data Penjualan (salesData),
+    // sama seperti sumber data yang dipakai tab "Cek Piutang" / dashboard-kerja — supaya tab
+    // "Piutang Tempo" (dari Data Uang Masuk) tidak lagi menebak kategori dari kata kunci di
+    // Keterangan/Nama Toko, melainkan memakai Produk & Kategori yang sebenarnya tercatat.
+    function buildFakturProdukMapDariSales(){
+        const map={};
+        salesData.forEach(r=>{
+            const key=normFaktur(r['No.Faktur']);
+            if(!key) return;
+            const produk=String(r.Produk||'').trim();
+            if(!produk) return;
+            if(!map[key]) map[key]={produkList:[],isFitri:false};
+            if(!map[key].produkList.includes(produk)) map[key].produkList.push(produk);
+            if(ptIsFitri(produk)) map[key].isFitri=true;
+        });
+        return map;
+    }
     function ptFlattenPiutang() {
         const flat=[]; Object.keys(ptIncomeByMonth).sort().forEach(bulan=>{ (ptIncomeByMonth[bulan]||[]).forEach(day=>{ (day.piutangDetail||[]).forEach(d=>{ flat.push({...d,_bulan:bulan,_tanggalHari:day.tanggal}); }); }); }); return flat;
     }
@@ -2450,16 +2470,37 @@
 
     function loadPiutangUangMasukFromCashData() {
         piutangUangMasukData=[]; cashDroppingUangMasukData=[];
+        const todayPtUM=new Date(); todayPtUM.setHours(0,0,0,0);
+        const fakturProdukMap=buildFakturProdukMapDariSales();
         for(const bulan in cashDataMap){
             const days=cashDataMap[bulan]||[];
             days.forEach(day => {
                 (day.piutangDetail||[]).forEach(d => {
-                    const isFitri=(d.ket||'').toLowerCase().includes('minyak')||(d.namaToko||'').toLowerCase().includes('fitri');
-                    piutangUangMasukData.push({...d,tglFaktur:d.tglFaktur||day.tanggal,kategori:isFitri?'fitri':'rupa',_bulan:bulan,_tanggalHari:day.tanggal});
+                    // Produk & Kategori diambil dari Bank Data Penjualan (data asli di dashboard-kerja),
+                    // dicocokkan lewat No.Faktur. Kalau fakturnya tidak ketemu di Bank Data Penjualan
+                    // (mis. input piutang lama secara manual), baru pakai tebakan dari Keterangan/Nama Toko.
+                    const fp=fakturProdukMap[normFaktur(d.noFaktur)];
+                    const produkAsli=fp&&fp.produkList.length?fp.produkList.join(', '):'';
+                    const isFitriFallback=(d.ket||'').toLowerCase().includes('minyak')||(d.namaToko||'').toLowerCase().includes('fitri');
+                    const isFitri=fp?fp.isFitri:isFitriFallback;
+                    const produk=produkAsli||d.produk||(isFitri?'Minyak Fitri':'Rupa-Rupa');
+                    const tagihan=d.tagihan||0;
+                    const totalBayar=d.totalBayar!=null?d.totalBayar:((d.bayarCash||0)+(d.bayarTransfer||0));
+                    const sisaTagihan=Math.max(0,tagihan-totalBayar);
+                    let statusClass=sisaTagihan<=0.5?'lunas':'belum';
+                    let overdueDays=null;
+                    if(statusClass!=='lunas' && d.jt){ const jtDate=ptParseDMY(d.jt); if(jtDate && jtDate<todayPtUM){ statusClass='overdue'; overdueDays=ptDaysBetween(todayPtUM,jtDate); } }
+                    // Tgl Bayar: tanggal baris "Data Uang Masuk" ini dicatat — tampil untuk setiap
+                    // pembayaran (cicilan/titip maupun lunas), bukan cuma saat statusnya sudah Lunas.
+                    let tglBayar='';
+                    if(totalBayar>0.5 && day.tanggal){ const dayPart=String(day.tanggal).split('-')[0]; const [tahun,bulanNum]=bulan.split('-'); if(dayPart) tglBayar=`${dayPart.padStart(2,'0')}/${bulanNum}/${tahun}`; }
+                    piutangUangMasukData.push({...d,tglFaktur:d.tglFaktur||day.tanggal,kategori:isFitri?'fitri':'rupa',produk,jatuhTempo:d.jt||'-',totalBayar,sisaTagihan,statusClass,overdueDays,tglBayar,_bulan:bulan,_tanggalHari:day.tanggal});
                 });
                 (day.cashDroppingDetail||[]).forEach(d => {
-                    const isFitri=(d.ket||'').toLowerCase().includes('minyak')||(d.namaToko||'').toLowerCase().includes('fitri');
-                    cashDroppingUangMasukData.push({...d,tglFaktur:d.tglFaktur||day.tanggal,kategori:isFitri?'fitri':'rupa',_bulan:bulan,_tanggalHari:day.tanggal});
+                    const fp=fakturProdukMap[normFaktur(d.noFaktur)];
+                    const isFitriFallback=(d.ket||'').toLowerCase().includes('minyak')||(d.namaToko||'').toLowerCase().includes('fitri');
+                    const isFitri=fp?fp.isFitri:isFitriFallback;
+                    cashDroppingUangMasukData.push({...d,tglFaktur:d.tglFaktur||day.tanggal,kategori:isFitri?'fitri':'rupa',produk:(fp&&fp.produkList.length?fp.produkList.join(', '):d.produk)||'',_bulan:bulan,_tanggalHari:day.tanggal});
                 });
             });
         }
@@ -2523,8 +2564,26 @@
         const start=(piutangUangMasukPage-1)*UANG_MASUK_ROWS_PER_PAGE;
         const pageRows=filtered.slice(start,start+UANG_MASUK_ROWS_PER_PAGE);
         const tbody=document.getElementById('piutangUangMasukBody');
-        if(pageRows.length===0){ tbody.innerHTML='<tr><td colspan="11" class="empty-msg">📂 Tidak ada data piutang tempo dari Data Uang Masuk.</td></tr>'; }
-        else { tbody.innerHTML=pageRows.map((d,i)=>`<tr><td>${start+i+1}</td><td>${d.tglFaktur||'-'}</td><td>${d.noFaktur||'-'}</td><td>${d.sales||'-'}</td><td>${d.namaToko||'-'}</td><td>${d.alamat||'-'}</td><td>${d.kategori==='fitri'?'Minyak Fitri':'Rupa Rupa'}</td><td class="num">${fmtRp(d.tagihan)}</td><td class="num">${fmtRp(d.bayarCash)}</td><td class="num">${fmtRp(d.bayarTransfer)}</td><td>${d.ket||'-'}</td></tr>`).join(''); }
+        if(pageRows.length===0){ tbody.innerHTML='<tr><td colspan="14" class="empty-msg">📂 Tidak ada data piutang tempo dari Data Uang Masuk.</td></tr>'; }
+        else { tbody.innerHTML=pageRows.map((d,i)=>{
+            const statusBadge=d.statusClass==='lunas'?'<span class="stempel-lunas">Lunas</span>':`<span class="badge pt-${d.statusClass}">${d.statusClass==='overdue'&&d.overdueDays!=null?`${d.overdueDays} hr/Overdue`:'Belum Lunas'}</span>`;
+            return `<tr class="${d.statusClass==='overdue'?'pt-row-overdue':''}">
+                <td>${d.noFaktur||'-'}</td>
+                <td>${d.tglFaktur||'-'}</td>
+                <td>${d.namaToko||'-'}</td>
+                <td>${d.alamat||'-'}</td>
+                <td>${d.sales||'-'}</td>
+                <td><span class="badge pt-tercatat">${d.kategori==='fitri'?'MINYAK FITRI':'RUPA RUPA'}</span></td>
+                <td>${d.produk||'-'}</td>
+                <td class="num">${fmtRp(d.tagihan)}</td>
+                <td class="num" style="${d.sisaTagihan>0.5?'color:#b91c1c;font-weight:700;':''}">${fmtRp(d.sisaTagihan)}</td>
+                <td>${d.jatuhTempo||'-'}${d.overdueDays!=null?` <span style="color:#b91c1c;font-weight:700;">(${d.overdueDays} hr)</span>`:''}</td>
+                <td>${statusBadge}</td>
+                <td>${d.tglBayar||'-'}</td>
+                <td class="num">${fmtRp(d.totalBayar)}</td>
+                <td>${d.ket||'-'}</td>
+            </tr>`;
+        }).join(''); }
         document.getElementById('piutangUangMasukPageLabel').textContent=`Halaman ${piutangUangMasukPage} dari ${totalPages}`;
         document.getElementById('piutangUangMasukPrevPage').disabled=piutangUangMasukPage<=1;
         document.getElementById('piutangUangMasukNextPage').disabled=piutangUangMasukPage>=totalPages;
