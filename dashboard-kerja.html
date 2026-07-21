@@ -785,6 +785,18 @@
             margin-bottom: 8px;
             align-items: center;
         }
+        .sales-edit-hint {
+            font-size: 11px;
+            font-weight: 700;
+            color: #dc2626;
+            white-space: nowrap;
+            align-self: center;
+            animation: salesEditHintBlink 2.2s ease-in-out infinite;
+        }
+        @keyframes salesEditHintBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.25; }
+        }
         .filter-bar .action-inline {
             display: flex;
             flex-wrap: nowrap;
@@ -3915,6 +3927,7 @@
             <div class="field"><label>Pembayaran</label><select id="fPembayaranSales"><option value="">Semua</option><option value="Cash">Cash</option><option value="Tempo">Tempo</option></select></div>
             <div class="field" style="justify-content:flex-end;"><label>&nbsp;</label><button class="btn btn-reset" id="btnResetSales">↺ Reset</button></div>
             <span class="info-right" id="salesRangeLabel" style="display:none;">Belum ada data</span>
+            <span class="sales-edit-hint">klik No Faktur untuk Edit Data Penjualan</span>
             <div class="action-inline" style="position: relative;">
                 <button class="menu-toggle-btn" id="salesMenuBtn">⚙️ Menu <span style="font-size:8px;">▼</span></button>
                 <div class="menu-dropdown" id="salesMenuDropdown">
@@ -7522,8 +7535,9 @@
             const tbody = document.getElementById('salesTableBody');
             const tanggalFilterActive = !!document.getElementById('fTanggalSalesFrom').value || !!document
                 .getElementById('fTanggalSalesTo').value;
+            const chipFilterActive = tab1QuickFilter !== 'semua';
             let rows;
-            if (tanggalFilterActive || allFiltered.length === 0) {
+            if (tanggalFilterActive || chipFilterActive || allFiltered.length === 0) {
                 rows = allFiltered;
                 document.getElementById('salesPager').style.display = 'none';
             } else {
