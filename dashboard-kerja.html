@@ -872,6 +872,9 @@
             box-shadow: var(--shadow);
             overflow: hidden;
         }
+        .tab1-split-left.tab1-hidden {
+            display: none;
+        }
         .tab1-split-right {
             flex: 1;
             min-width: 0;
@@ -1077,6 +1080,36 @@
         }
         .sales-card-list.show { display: flex; }
         .table-wrap.tab1-hidden { display: none; }
+        .sales-card-stempel-lunas {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            display: inline-block;
+            color: #c0392b;
+            border: 2px solid #c0392b;
+            border-radius: 4px;
+            padding: 2px 10px;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+            font-family: 'Arial Black', Arial, sans-serif;
+            transform: rotate(-10deg);
+            background: repeating-linear-gradient(115deg, rgba(192, 57, 43, 0.10) 0px, rgba(192, 57, 43, 0.10) 1px, transparent 1px, transparent 3px), repeating-linear-gradient(25deg, rgba(192, 57, 43, 0.08) 0px, rgba(192, 57, 43, 0.08) 1px, transparent 1px, transparent 4px);
+            text-shadow: 0.6px 0.6px 0 rgba(192, 57, 43, 0.3);
+            box-shadow: 0 0 0 1px rgba(192, 57, 43, 0.15);
+            mix-blend-mode: multiply;
+            pointer-events: none;
+        }
+        .sales-card-stempel-lunas::before {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            border: 1px solid #c0392b;
+            border-radius: 3px;
+            opacity: 0.85;
+            pointer-events: none;
+        }
         .sales-card {
             background: #fff;
             border: 1px solid #e5e9f0;
@@ -7361,10 +7394,12 @@
             const cardList = document.getElementById('salesCardList');
             const tabelBtn = document.getElementById('tab1ViewTabelBtn');
             const kartuBtn = document.getElementById('tab1ViewKartuBtn');
+            const splitLeft = document.querySelector('#tab1 .tab1-split-left');
             if (tableWrap) tableWrap.classList.toggle('tab1-hidden', isCard);
             if (cardList) cardList.classList.toggle('show', isCard);
             if (tabelBtn) tabelBtn.classList.toggle('active', !isCard);
             if (kartuBtn) kartuBtn.classList.toggle('active', isCard);
+            if (splitLeft) splitLeft.classList.toggle('tab1-hidden', !isCard);
         }
         document.getElementById('tab1ViewToggle').addEventListener('click', function(e) {
             const btn = e.target.closest('.tab1-view-btn');
@@ -8423,6 +8458,7 @@
                 const kategori = (d.Produk || '').toLowerCase().includes('fitri') ? 'Minyak Fitri' : 'Rupa Rupa';
                 const noFakturSafe = escapeHtml(String(noFaktur));
                 return `<div class="sales-card${cbChecked ? ' selected' : ''}">
+                    ${d._status === 'cocok' ? '<div class="sales-card-stempel-lunas">Lunas</div>' : ''}
                     <div class="sales-card-top">
                         <div class="sales-card-top-left">
                             <input type="checkbox" class="cash-row-checkbox" data-faktur="${noFakturSafe}" ${cbChecked}>
@@ -8485,6 +8521,7 @@
                 const selectAll = document.getElementById('cashSelectAll');
                 if (selectAll) selectAll.checked = (allCbs.length > 0 && checkedCbs.length === allCbs.length);
                 updateCashSelectedInfo();
+                if (e.target.checked) sendSelectedToTab6();
             }
         });
 
@@ -9238,6 +9275,7 @@
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 18px;">
                         <div><strong>Toko (Uang Masuk):</strong> ${escapeHtml(bayar.namaToko || '-')}</div>
                         <div><strong>Tgl Jatuh Tempo:</strong> ${escapeHtml(bayar.jt || '-')}</div>
+                        <div><strong>Tgl Uang Masuk:</strong> ${bayar._tglHari ? fmtTanggalHarianYY(bayar._tglHari, bayar._bulanRecord) : '-'}</div>
                         <div><strong>Tagihan:</strong> ${fmtRp(bayar.tagihan)}</div>
                         <div><strong>Dibayar Cash:</strong> ${fmtRp(bayar.bayarCash)}</div>
                         <div><strong>Dibayar Transfer:</strong> ${fmtRp(bayar.bayarTransfer)}</div>
