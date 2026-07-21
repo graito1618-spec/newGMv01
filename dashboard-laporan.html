@@ -529,6 +529,18 @@
             color: #1e293b;
             font-weight: 700;
         }
+        /* Dropdown tanggal di kartu ringkasan (Data Uang Masuk & Rekap Profit)
+           dibuat teks putih supaya kontras di kotak ungu saat TERTUTUP, tapi
+           daftar opsi native browser saat DIBUKA berlatar putih — kalau tidak
+           di-override, teks opsi ikut putih dan jadi tak terbaca (putih di
+           atas putih), seolah tanggal-tanggal sebelumnya "hilang" padahal
+           datanya ada, cuma tidak kelihatan. */
+        #pemTglPilih option,
+        #rpTglPilih option {
+            color: #111827;
+            background: #fff;
+        }
+
         .toolbar-right select {
             padding: 2px 6px;
             border: 1px solid #d1d5db;
@@ -9646,19 +9658,31 @@
         }
 
         // Data untuk KARTU RINGKASAN (Total Profit, Dari Cash Dropping, Dari
-        // Piutang Tempo, Profit Tanggal) SENGAJA hanya ikut filter Bulan Uang
-        // Masuk saja — TIDAK ikut filter Cari Faktur/Tanggal/Sumber Uang/Status.
-        // Supaya kartu selalu menunjukkan angka total yang sebenarnya (satu bulan
-        // penuh), bukan ikut menyempit saat kita sedang menyaring baris-baris
-        // yang mau dicek manual (mis. filter Status "Belum Lunas"), yang kalau
-        // ikut kefilter bikin angkanya kelihatan minus/salah padahal cuma
-        // sebagian data yang lagi ditampilkan.
-        function rpGetFilteredUntukKartu() {
-            const bulan = document.getElementById('fBulanRP').value;
-            return rpRawData.filter(r => {
-                if (bulan && r.tglUangMasuk.slice(0, 7) !== bulan) return false;
-                return true;
+        // Piutang Tempo, Profit Tanggal) SENGAJA DIKUNCI ke SATU bulan saja —
+        // TIDAK ikut filter "Bulan Uang Masuk" ataupun filter Cari
+        // Faktur/Tanggal/Sumber Uang/Status di atas tabel. Jadi kartu ringkasan
+        // SELALU menunjukkan angka satu bulan saja, walau user sedang
+        // mem-filter tabel di bawah untuk melihat bulan lain.
+        //
+        // Bulan yang dipakai = bulan TERBARU yang benar-benar ADA DATANYA di
+        // Data Uang Masuk (rpRawData), otomatis mengikuti data — BUKAN
+        // APP_DEFAULT_BULAN yang hardcode. Kalau rpRawData masih kosong
+        // (belum dibangun / belum ada data sama sekali), baru fallback ke
+        // APP_DEFAULT_BULAN lalu ke bulan sistem saat ini supaya tidak pernah
+        // kosong.
+        function rpGetBulanTerbaruData() {
+            let bulanTerbaru = '';
+            rpRawData.forEach(r => {
+                if (!r.tglUangMasuk) return;
+                const b = r.tglUangMasuk.slice(0, 7);
+                if (b > bulanTerbaru) bulanTerbaru = b;
             });
+            return bulanTerbaru;
+        }
+
+        function rpGetFilteredUntukKartu() {
+            const bulanKartu = rpGetBulanTerbaruData() || APP_DEFAULT_BULAN || new Date().toISOString().slice(0, 7);
+            return rpRawData.filter(r => r.tglUangMasuk && r.tglUangMasuk.slice(0, 7) === bulanKartu);
         }
 
         function rpGetFiltered() {

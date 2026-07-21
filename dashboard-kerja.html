@@ -1172,6 +1172,32 @@
             color: #9ca3af;
             font-size: 11px;
         }
+        .cash-card-produk-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9.5px;
+            margin-top: 6px;
+        }
+        .cash-card-produk-table th {
+            text-align: right;
+            padding: 3px 4px;
+            border-bottom: 1px solid #e8ecf4;
+            color: #4a5568;
+            font-weight: 700;
+        }
+        .cash-card-produk-table th:first-child,
+        .cash-card-produk-table td:first-child {
+            text-align: left;
+        }
+        .cash-card-produk-table td {
+            text-align: right;
+            padding: 3px 4px;
+        }
+        .cash-card-produk-table tfoot td {
+            border-top: 1px solid #d0d7de;
+            font-weight: 800;
+            color: #1e293b;
+        }
         .badge.lunas-mini {
             background: #dcfce7;
             color: #15803d;
@@ -1666,6 +1692,70 @@
         #ptDetailModal .modal-head,
         #detailModalGlobal .modal-head {
             background: linear-gradient(135deg, #1e3a5f 0%, #0f2942 100%);
+        }
+        /* ===== Redesign modal Detail Faktur (#detailModalGlobal) ===== */
+        #detailModalGlobal .modal-head {
+            padding: 16px 22px;
+        }
+        #detailModalGlobal .modal-head h2 {
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+        }
+        #detailModalGlobal .modal-body {
+            padding: 22px 24px 24px;
+        }
+        #detailModalGlobal .df-table-wrap {
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+        }
+        #detailModalGlobal .df-table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #detailModalGlobal .df-table-wrap thead tr {
+            background: #eef2f7;
+        }
+        #detailModalGlobal .df-table-wrap tbody tr {
+            transition: background 0.15s ease;
+        }
+        #detailModalGlobal .df-table-wrap tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        #detailModalGlobal .df-table-wrap tbody tr:hover {
+            background: #eef2ff;
+        }
+        #detailModalGlobal .df-total-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
+            padding: 14px 20px;
+            margin-top: 10px;
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.12);
+        }
+        #detailModalGlobal .df-total-box .df-total-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #065f46;
+            letter-spacing: 0.3px;
+        }
+        #detailModalGlobal .df-total-box .df-total-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: #059669;
+        }
+        #detailModalGlobal .df-btn-pill {
+            border-radius: 999px !important;
+            padding: 11px 24px !important;
+            font-size: 13px !important;
+            height: auto !important;
+            gap: 6px !important;
         }
         .info-kosong-mencolok {
             display: block;
@@ -3775,8 +3865,6 @@
                 <button type="button" class="tab1-chip active" data-chip="semua">Semua <span class="chip-count" id="chipCountSemua">0</span></button>
                 <button type="button" class="tab1-chip" data-chip="cash">💵 Cash <span class="chip-count" id="chipCountCash">0</span></button>
                 <button type="button" class="tab1-chip" data-chip="tempo">🗓️ Tempo <span class="chip-count" id="chipCountTempo">0</span></button>
-                <button type="button" class="tab1-chip" data-chip="lunas">✅ Lunas <span class="chip-count" id="chipCountLunas">0</span></button>
-                <button type="button" class="tab1-chip" data-chip="belum_lunas">❌ Belum Lunas <span class="chip-count" id="chipCountBelumLunas">0</span></button>
             </div>
             <div class="tab1-view-toggle" id="tab1ViewToggle">
                 <button type="button" class="tab1-view-btn active" id="tab1ViewTabelBtn" data-view="table">📋 Tabel</button>
@@ -3805,6 +3893,9 @@
                     </div>
                     <div class="menu-item">
                         <button class="btn btn-outline" id="btnExportSales" style="flex:1;margin:0;">📥 Download</button>
+                    </div>
+                    <div class="menu-item">
+                        <button class="btn btn-outline" id="btnBersihkanHantu" style="flex:1;margin:0;border-color:#0d6efd;color:#0d6efd;" title="Hapus pasangan baris minus/plus akibat edit faktur (baris hantu), tandai sisanya untuk diperiksa manual">🧹 Bersihkan Baris Hantu</button>
                     </div>
                     <div class="menu-item" id="btnPiutangModeContainer" style="display:none;">
                         <button class="btn btn-orange" id="btnPiutangMode" style="flex:1;margin:0;">📋 Piutang</button>
@@ -3912,6 +4003,17 @@
 
     <!-- ======= TAB 3 – CEK CASH ======= -->
     <div class="tab-content" id="tab3">
+        <div class="tab1-app-toolbar">
+            <div class="tab1-chip-row" id="tab3ChipRow">
+                <button type="button" class="tab1-chip active" data-chip="semua">Semua <span class="chip-count" id="tab3ChipCountSemua">0</span></button>
+                <button type="button" class="tab1-chip" data-chip="lunas">✅ Lunas <span class="chip-count" id="tab3ChipCountLunas">0</span></button>
+                <button type="button" class="tab1-chip" data-chip="belum_lunas">❌ Belum Lunas <span class="chip-count" id="tab3ChipCountBelumLunas">0</span></button>
+            </div>
+            <div class="tab1-view-toggle" id="tab3ViewToggle">
+                <button type="button" class="tab1-view-btn active" id="tab3ViewTabelBtn" data-view="table">📋 Tabel</button>
+                <button type="button" class="tab1-view-btn" id="tab3ViewKartuBtn" data-view="card">🗂️ Kartu</button>
+            </div>
+        </div>
         <div class="pt-source-status" id="cashSourceStatus">0 transaksi cash · 0 faktur dipilih</div>
         <div class="cash-filter-bar">
             <div class="field" style="min-width:130px;"><label>Cari Faktur</label><input type="text" id="cekFilterFaktur" placeholder="No faktur..."></div>
@@ -3928,7 +4030,7 @@
             </div>
         </div>
 
-        <div class="cash-table-wrap" style="height: 485px; max-height: 485px;">
+        <div class="cash-table-wrap" style="height: 485px; max-height: 485px;" id="tab3TableWrap">
             <table>
                 <thead>
                     <tr>
@@ -3946,6 +4048,7 @@
                 <tbody id="cekCashSalesBody"><tr><td colspan="9" class="empty-msg">Tidak ada data cash.</td></tr></tbody>
             </table>
         </div>
+        <div class="sales-card-list" id="cashCardList" style="height:485px;"></div>
         <div class="pagination" id="cashPager">
             <div><button id="cashPrevPage" disabled="">◀ Sebelumnya</button><span id="cashPageLabel">Halaman 1 dari 1</span><button id="cashNextPage" disabled="">Berikutnya ▶</button></div>
             <div><span class="badge-count" id="cashTotalData">0 data</span></div>
@@ -7659,6 +7762,120 @@
             showToast('Data kiriman dari Rapikan Data diabaikan.', 'info');
         });
 
+        // ================================================================
+        // BERSIHKAN BARIS HANTU (port dari bersihkan_data.py) — langsung di
+        // dalam tab Bank Data Penjualan, tidak perlu download+jalankan script
+        // Python terpisah lagi.
+        //
+        // Baris hantu = pasangan baris yang muncul tiap kali sebuah faktur
+        // DIEDIT: sistem kasir menulis 1 baris MINUS (membatalkan baris lama)
+        // dan 1 baris PLUS (baris pengganti) dengan No.Faktur + Tanggal +
+        // Produk yang sama. Net dampaknya nol, tapi baris minus ini bikin
+        // jumlah baris & transaksi beda dari yang seharusnya.
+        //
+        // Catatan: berbeda dari file "Data Rapi" asli yang punya jam:menit:
+        // detik pada kolom Tanggal, field Tanggal di Bank Data Penjualan di
+        // sini cuma tanggal (YYYY-MM-DD) tanpa jam. Jadi kunci pencocokan di
+        // sini pakai No.Faktur + Tanggal + Produk + Jumlah — cukup unik untuk
+        // hampir semua kasus, tapi kalau dalam SATU hari ada lebih dari satu
+        // edit dengan Jumlah yang sama persis, satu di antaranya tetap bisa
+        // lolos jadi baris "periksa manual" (aman, tidak akan salah hapus).
+        // ================================================================
+        function cariBarisHantuSales(rows) {
+            const kunci = (r, jml) => [
+                String(r['No.Faktur'] || '').trim().toUpperCase(),
+                String(r['Tanggal'] || '').trim(),
+                String(r['Produk'] || '').trim().toUpperCase(),
+                jml
+            ].join('|||');
+
+            // Kumpulkan lokasi baris PLUS per kunci
+            const positiveLookup = new Map();
+            rows.forEach((r, idx) => {
+                const jml = Number(r.Jumlah);
+                if (!isFinite(jml) || jml <= 0) return;
+                const key = kunci(r, jml);
+                if (!positiveLookup.has(key)) positiveLookup.set(key, []);
+                positiveLookup.get(key).push(idx);
+            });
+
+            const toDeleteIdx = [];
+            const toFlagIdx = [];
+            rows.forEach((r, idx) => {
+                const jml = Number(r.Jumlah);
+                if (!isFinite(jml) || jml >= 0) return; // hanya proses baris MINUS
+                const candidates = positiveLookup.get(kunci(r, -jml));
+                if (candidates && candidates.length) {
+                    candidates.pop(); // pakai satu pasangan, jangan dipakai dua kali
+                    toDeleteIdx.push(idx);
+                } else {
+                    toFlagIdx.push(idx); // minus tanpa pasangan -> kemungkinan retur/void asli
+                }
+            });
+            return { toDeleteIdx, toFlagIdx };
+        }
+
+        document.getElementById('btnBersihkanHantu').addEventListener('click', async function() {
+            if (!salesData.length) { showToast('Tidak ada data di Bank Data Penjualan.', 'warning'); return; }
+
+            const { toDeleteIdx, toFlagIdx } = cariBarisHantuSales(salesData);
+
+            if (!toDeleteIdx.length && !toFlagIdx.length) {
+                showToast('✅ Tidak ditemukan baris minus sama sekali di Bank Data Penjualan.', 'success');
+                return;
+            }
+
+            const konfirmasi = `Ditemukan ${toDeleteIdx.length} baris hantu (pasangan minus/plus dari edit faktur) ` +
+                `yang akan DIHAPUS,\ndan ${toFlagIdx.length} baris minus TANPA pasangan (kemungkinan retur/void asli) ` +
+                `yang TIDAK akan dihapus, hanya dilaporkan untuk diperiksa manual.\n\nLanjutkan?`;
+            if (!confirm(konfirmasi)) return;
+
+            // Simpan detail baris yang perlu diperiksa manual SEBELUM index berubah
+            const flaggedDetail = toFlagIdx.map(idx => salesData[idx]);
+
+            // Hapus dari index terbesar ke terkecil supaya index baris lain tidak kacau
+            toDeleteIdx.sort((a, b) => b - a).forEach(idx => salesData.splice(idx, 1));
+
+            const okSave = await saveSalesData();
+            rebuildSalesFilterOptions();
+            salesCurrentDateIndex = Infinity;
+            renderSales();
+
+            if (okSave) {
+                const pesanFlag = toFlagIdx.length ? ` ⚠️ ${toFlagIdx.length} baris ditandai untuk diperiksa manual.` : '';
+                showToast(`🧹 ${toDeleteIdx.length} baris hantu berhasil dihapus.${pesanFlag}`, 'success');
+            }
+
+            if (flaggedDetail.length) {
+                const rowsHtml = flaggedDetail.map(r => `
+                    <tr>
+                        <td style="padding:4px 8px;border:1px solid #e2e8f0;">${escapeHtml(String(r.Tanggal || ''))}</td>
+                        <td style="padding:4px 8px;border:1px solid #e2e8f0;">${escapeHtml(String(r['No.Faktur'] || ''))}</td>
+                        <td style="padding:4px 8px;border:1px solid #e2e8f0;">${escapeHtml(String(r.Produk || ''))}</td>
+                        <td style="padding:4px 8px;border:1px solid #e2e8f0;text-align:right;">${escapeHtml(String(r.Jumlah))}</td>
+                    </tr>`).join('');
+                document.getElementById('detailModalTitleGlobal').textContent = '⚠️ Baris Minus Tanpa Pasangan — Periksa Manual';
+                document.getElementById('detailModalBodyGlobal').innerHTML = `
+                    <p style="margin-bottom:10px;font-size:12px;color:#555;">
+                        Baris-baris minus di bawah ini TIDAK ditemukan pasangan plus-nya
+                        (No.Faktur + Tanggal + Produk + jumlah sama), jadi TIDAK dihapus otomatis.
+                        Ini kemungkinan retur/void asli, bukan hasil edit faktur — mohon periksa manual di tab Bank Data Penjualan.
+                    </p>
+                    <div style="max-height:360px;overflow:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:11px;">
+                        <thead><tr style="background:#f1f5f9;">
+                            <th style="padding:4px 8px;border:1px solid #e2e8f0;">Tanggal</th>
+                            <th style="padding:4px 8px;border:1px solid #e2e8f0;">No.Faktur</th>
+                            <th style="padding:4px 8px;border:1px solid #e2e8f0;">Produk</th>
+                            <th style="padding:4px 8px;border:1px solid #e2e8f0;">Jumlah</th>
+                        </tr></thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                    </div>`;
+                document.getElementById('detailModalGlobal').classList.add('show');
+            }
+        });
+
         document.getElementById('fileImportSales').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -8071,6 +8288,22 @@
 
             cashTableFiltered = merged;
 
+            // Update chip Semua/Lunas/Belum Lunas (dihitung dari cashSales SEBELUM
+            // difilter oleh status, supaya angkanya tetap menunjukkan total apa adanya
+            // dan chip yang belum aktif tetap kelihatan jumlahnya).
+            let cLunasChip = 0, cBelumChip = 0;
+            cashSales.forEach(d => {
+                if (cashDropMap.has(normFaktur(d['No.Faktur']))) cLunasChip++; else cBelumChip++;
+            });
+            const setChipTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            setChipTxt('tab3ChipCountSemua', cashSales.length);
+            setChipTxt('tab3ChipCountLunas', cLunasChip);
+            setChipTxt('tab3ChipCountBelumLunas', cBelumChip);
+            const tab3ActiveChip = cekFilterKet === 'cocok' ? 'lunas' : (cekFilterKet === 'tidak' ? 'belum_lunas' : 'semua');
+            document.querySelectorAll('#tab3ChipRow .tab1-chip').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.chip === tab3ActiveChip);
+            });
+
             // Update status info
             const totalCash = cashSales.length;
             const selectedCount = Object.values(cashChecked).filter(v => v).length;
@@ -8131,7 +8364,129 @@
             const allCbs = document.querySelectorAll('.cash-row-checkbox');
             const checkedCbs = document.querySelectorAll('.cash-row-checkbox:checked');
             if (selectAll) selectAll.checked = (allCbs.length > 0 && checkedCbs.length === allCbs.length);
+
+            renderCashCards(pageRows, start);
         }
+
+        // Bangun tabel rincian produk (Produk / Qty / Harga Jual / Harga Beli / Profit)
+        // untuk 1 No.Faktur, dipakai di dalam kartu Cek Cash (mode Kartu).
+        // Sumber data & rumus sama persis dengan modal Detail Faktur (cashShowDetailModal)
+        // supaya angkanya selalu konsisten antara kartu dan modal.
+        function buildCashCardRincian(noFaktur, fallbackRow) {
+            const items = salesData.filter(s => normFaktur(s['No.Faktur']) === normFaktur(noFaktur));
+            const sumber = items.length ? items : [fallbackRow];
+            let totalQty = 0, totalJual = 0, totalBeli = 0, totalProfit = 0;
+            const rows = sumber.map(it => {
+                const jumlah = parseNumber(it.Jumlah);
+                const hargaJual = parseNumber(it['Harga Jual']);
+                const hargaBeli = it['Harga Beli'] !== undefined && it['Harga Beli'] !== '' ? parseNumber(it['Harga Beli']) : null;
+                const disc = parseNumber(it.Disc);
+                const totalBaris = it.Total !== undefined && it.Total !== '' ? parseNumber(it.Total) : (jumlah * hargaJual) - disc;
+                let profitBaris;
+                if (it.Profit !== undefined && it.Profit !== '' && it.Profit !== null) {
+                    profitBaris = parseNumber(it.Profit);
+                } else if (hargaBeli !== null) {
+                    profitBaris = totalBaris - (hargaBeli * jumlah);
+                } else {
+                    profitBaris = null;
+                }
+                totalQty += jumlah;
+                totalJual += totalBaris;
+                if (hargaBeli !== null) totalBeli += hargaBeli * jumlah;
+                if (profitBaris !== null) totalProfit += profitBaris;
+                return `<tr>
+                        <td>${escapeHtml(it.Produk || '-')}</td>
+                        <td>${jumlah || 0} ${escapeHtml(it.Satuan || '')}</td>
+                        <td>${fmtRp(hargaJual)}</td>
+                        <td>${hargaBeli !== null ? fmtRp(hargaBeli) : '-'}</td>
+                        <td>${profitBaris !== null ? fmtRp(profitBaris) : '-'}</td>
+                    </tr>`;
+            }).join('');
+            return `<table class="cash-card-produk-table">
+                    <thead><tr><th>Produk</th><th>Qty</th><th>Harga Jual</th><th>Harga Beli</th><th>Profit</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr><td>TOTAL</td><td>${totalQty}</td><td>${fmtRp(totalJual)}</td><td>${totalBeli ? fmtRp(totalBeli) : '-'}</td><td>${fmtRp(totalProfit)}</td></tr></tfoot>
+                </table>`;
+        }
+
+        function renderCashCards(pageRows, start) {
+            const wrap = document.getElementById('cashCardList');
+            if (!wrap) return;
+            if (!pageRows || pageRows.length === 0) {
+                wrap.innerHTML = `<div class="sales-card-empty">📂 Tidak ada data cash.</div>`;
+                return;
+            }
+            wrap.innerHTML = pageRows.map((d, idx) => {
+                const noFaktur = d['No.Faktur'] || '';
+                const cbChecked = cashChecked[noFaktur] ? 'checked' : '';
+                const statusLabel = d._status === 'cocok' ? '✅ Lunas' : '❌ Belum Lunas';
+                const kategori = (d.Produk || '').toLowerCase().includes('fitri') ? 'Minyak Fitri' : 'Rupa Rupa';
+                const noFakturSafe = escapeHtml(String(noFaktur));
+                return `<div class="sales-card${cbChecked ? ' selected' : ''}">
+                    <div class="sales-card-top">
+                        <div class="sales-card-top-left">
+                            <input type="checkbox" class="cash-row-checkbox" data-faktur="${noFakturSafe}" ${cbChecked}>
+                            <span class="faktur-link sales-card-faktur" data-idx="${start+idx}" data-src="cekCash" style="cursor:pointer;">${cashNotesMap[noFaktur] ? '📝 ' : ''}${noFakturSafe}</span>
+                        </div>
+                        <span class="sales-card-date">${fmtTanggal(d.Tanggal)}</span>
+                    </div>
+                    <div class="sales-card-produk">${escapeHtml(d.Customer || '-')}</div>
+                    <div class="sales-card-qty">${escapeHtml(d.Alamat || '-')}</div>
+                    ${buildCashCardRincian(noFaktur, d)}
+                    <div class="sales-card-mid">
+                        <span class="sales-card-total">${fmtRp(d.Total || 0)}</span>
+                        <span class="sales-card-badges"><span class="badge pt-tercatat">${kategori}</span> <span class="badge ${d._status === 'cocok' ? 'cocok' : 'tidak'}">${statusLabel}</span></span>
+                    </div>
+                    <div class="sales-card-foot">
+                        <span><b>${escapeHtml(d.Sales || '-')}</b></span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        let tab3ViewMode = localStorage.getItem('tab3ViewMode') === 'card' ? 'card' : 'table';
+        function applyTab3ViewMode() {
+            const isCard = tab3ViewMode === 'card';
+            const tableWrap = document.getElementById('tab3TableWrap');
+            const cardList = document.getElementById('cashCardList');
+            const tabelBtn = document.getElementById('tab3ViewTabelBtn');
+            const kartuBtn = document.getElementById('tab3ViewKartuBtn');
+            if (tableWrap) tableWrap.style.display = isCard ? 'none' : '';
+            if (cardList) cardList.classList.toggle('show', isCard);
+            if (tabelBtn) tabelBtn.classList.toggle('active', !isCard);
+            if (kartuBtn) kartuBtn.classList.toggle('active', isCard);
+        }
+        document.getElementById('tab3ChipRow').addEventListener('click', function(e) {
+            const btn = e.target.closest('.tab1-chip');
+            if (!btn) return;
+            const chip = btn.dataset.chip; // semua | lunas | belum_lunas
+            const ketSel = document.getElementById('cekFilterKet');
+            if (ketSel) ketSel.value = chip === 'lunas' ? 'cocok' : (chip === 'belum_lunas' ? 'tidak' : '');
+            cashTablePage = 1;
+            renderCek();
+        });
+
+        document.getElementById('tab3ViewToggle').addEventListener('click', function(e) {
+            const btn = e.target.closest('.tab1-view-btn');
+            if (!btn) return;
+            tab3ViewMode = btn.dataset.view === 'card' ? 'card' : 'table';
+            localStorage.setItem('tab3ViewMode', tab3ViewMode);
+            applyTab3ViewMode();
+        });
+        applyTab3ViewMode();
+
+        document.getElementById('cashCardList').addEventListener('change', function(e) {
+            if (e.target.classList.contains('cash-row-checkbox')) {
+                const faktur = e.target.dataset.faktur;
+                cashChecked[faktur] = e.target.checked;
+                e.target.closest('.sales-card').classList.toggle('selected', e.target.checked);
+                const allCbs = document.querySelectorAll('.cash-row-checkbox');
+                const checkedCbs = document.querySelectorAll('.cash-row-checkbox:checked');
+                const selectAll = document.getElementById('cashSelectAll');
+                if (selectAll) selectAll.checked = (allCbs.length > 0 && checkedCbs.length === allCbs.length);
+                updateCashSelectedInfo();
+            }
+        });
 
         document.getElementById('cashPrevPage').addEventListener('click', function() {
             if (cashTablePage > 1) { cashTablePage--;
@@ -11541,12 +11896,12 @@
                 if (hargaBeli !== null) totalBeli += hargaBeli * jumlah;
                 if (profitBaris !== null) totalProfit += profitBaris;
                 return `<tr data-gidx="${gidx}">
-                        <td style="padding:3px 4px;"><input type="text" class="tab1e-produk" list="produkMasterDatalist" value="${escapeHtml(it.Produk || '')}" style="width:100%;min-width:110px;box-sizing:border-box;padding:3px 4px;border:1px solid #cbd5e1;border-radius:3px;font-size:10.5px;"></td>
-                        <td class="num" style="padding:3px 4px;"><input type="number" class="tab1e-qty num" value="${jumlah || 0}" style="width:100%;box-sizing:border-box;text-align:right;padding:3px 4px;border:1px solid #cbd5e1;border-radius:3px;font-size:10.5px;"></td>
-                        <td class="num" style="padding:3px 4px;"><input type="number" class="tab1e-hargabeli num" value="${hargaBeli !== null ? hargaBeli : ''}" placeholder="-" style="width:100%;box-sizing:border-box;text-align:right;padding:3px 4px;border:1px solid #cbd5e1;border-radius:3px;font-size:10.5px;"></td>
-                        <td class="num" style="padding:3px 4px;"><input type="number" class="tab1e-hargajual num" value="${hargaJual || 0}" style="width:100%;box-sizing:border-box;text-align:right;padding:3px 4px;border:1px solid #cbd5e1;border-radius:3px;font-size:10.5px;"></td>
-                        <td class="num" style="padding:3px 4px;"><input type="number" class="tab1e-disc num" value="${disc || 0}" style="width:100%;box-sizing:border-box;text-align:right;padding:3px 4px;border:1px solid #cbd5e1;border-radius:3px;font-size:10.5px;"></td>
-                        <td class="num tab1e-total" style="font-weight:600;padding:3px 4px;">${fmtRp(totalBaris)}</td>
+                        <td style="padding:6px 8px;"><input type="text" class="tab1e-produk" list="produkMasterDatalist" value="${escapeHtml(it.Produk || '')}" style="width:100%;min-width:110px;box-sizing:border-box;padding:5px 7px;border:1px solid #cbd5e1;border-radius:5px;font-size:11.5px;"></td>
+                        <td class="num" style="padding:6px 8px;"><input type="number" class="tab1e-qty num" value="${jumlah || 0}" style="width:100%;box-sizing:border-box;text-align:right;padding:5px 7px;border:1px solid #cbd5e1;border-radius:5px;font-size:11.5px;"></td>
+                        <td class="num" style="padding:6px 8px;"><input type="number" class="tab1e-hargabeli num" value="${hargaBeli !== null ? hargaBeli : ''}" placeholder="-" style="width:100%;box-sizing:border-box;text-align:right;padding:5px 7px;border:1px solid #cbd5e1;border-radius:5px;font-size:11.5px;"></td>
+                        <td class="num" style="padding:6px 8px;"><input type="number" class="tab1e-hargajual num" value="${hargaJual || 0}" style="width:100%;box-sizing:border-box;text-align:right;padding:5px 7px;border:1px solid #cbd5e1;border-radius:5px;font-size:11.5px;"></td>
+                        <td class="num" style="padding:6px 8px;"><input type="number" class="tab1e-disc num" value="${disc || 0}" style="width:100%;box-sizing:border-box;text-align:right;padding:5px 7px;border:1px solid #cbd5e1;border-radius:5px;font-size:11.5px;"></td>
+                        <td class="num tab1e-total" style="font-weight:700;padding:6px 8px;font-size:12.5px;color:#1e3a5f;">${fmtRp(totalBaris)}</td>
                     </tr>`;
             }).join('');
 
@@ -11576,43 +11931,39 @@
                             <div style="font-size:10px;color:#6b7280;margin-top:2px;">( jika klik <strong>Transaksi Batal</strong>, data akan dipindah ke Trash dan tidak akan ikut dijumlahkan )</div>
                         </div>
                     </div>
-                    <hr style="margin:8px 0; border:none; border-top:1px solid var(--line);">
-                    <div style="font-size:11px;font-weight:700;margin-bottom:4px;">📦 Rincian Item <span style="font-weight:400;color:#6b7280;">(bisa diedit — Produk, Qty, Harga Beli, Harga Jual, Disc. Total otomatis terisi)</span></div>
-                    <table id="tab1EditFakturTable" style="width:100%; table-layout:fixed; border-collapse:collapse; font-size:10.5px;">
+                    <hr style="margin:14px 0; border:none; border-top:1px solid var(--line);">
+                    <div style="font-size:12px;font-weight:700;margin-bottom:8px;">📦 Rincian Item <span style="font-weight:400;color:#6b7280;">(bisa diedit — Produk, Qty, Harga Beli, Harga Jual, Disc. Total otomatis terisi)</span></div>
+                    <div class="df-table-wrap">
+                    <table id="tab1EditFakturTable" style="width:100%; table-layout:fixed; border-collapse:collapse; font-size:11.5px;">
                         <colgroup>
                             <col style="width:auto;">
                             <col style="width:60px;">
                             <col style="width:100px;">
                             <col style="width:100px;">
                             <col style="width:90px;">
-                            <col style="width:110px;">
+                            <col style="width:120px;">
                         </colgroup>
                         <thead>
-                            <tr style="border-bottom:1px solid var(--line);">
-                                <th style="text-align:left;padding:3px 4px;">Produk</th>
-                                <th style="text-align:right;padding:3px 4px;">Qty</th>
-                                <th style="text-align:right;padding:3px 4px;">Harga Beli</th>
-                                <th style="text-align:right;padding:3px 4px;">Harga Jual</th>
-                                <th style="text-align:right;padding:3px 4px;">Disc</th>
-                                <th style="text-align:right;padding:3px 4px;">Total</th>
+                            <tr>
+                                <th style="text-align:left;padding:8px 8px;">Produk</th>
+                                <th style="text-align:right;padding:8px 8px;">Qty</th>
+                                <th style="text-align:right;padding:8px 8px;">Harga Beli</th>
+                                <th style="text-align:right;padding:8px 8px;">Harga Jual</th>
+                                <th style="text-align:right;padding:8px 8px;">Disc</th>
+                                <th style="text-align:right;padding:8px 8px;">Total</th>
                             </tr>
                         </thead>
                         <tbody>${baris}</tbody>
-                        <tfoot>
-                            <tr style="border-top:2px solid var(--line); font-weight:700;">
-                                <td style="padding:3px 4px;">TOTAL</td>
-                                <td class="num" style="padding:3px 4px;" id="tab1EditTotalQty">${totalQty}</td>
-                                <td class="num" style="padding:3px 4px;"></td>
-                                <td class="num" style="padding:3px 4px;"></td>
-                                <td class="num" style="padding:3px 4px;"></td>
-                                <td class="num" style="padding:3px 4px;" id="tab1EditTotalJual">${fmtRp(totalJual)}</td>
-                            </tr>
-                        </tfoot>
                     </table>
-                    <hr style="margin:10px 0; border:none; border-top:1px solid var(--line);">
-                    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-                        <button type="button" id="tab1BtnTransaksiBatal" class="btn btn-danger" style="font-size:11px;padding:6px 14px;" data-faktur="${escapeHtml(noFaktur)}">❌ Transaksi Batal</button>
-                        <button type="button" id="tab1BtnUbahFaktur" class="btn btn-success" style="font-size:11px;padding:6px 14px;" data-faktur="${escapeHtml(noFaktur)}">✅ Ubah &amp; Simpan</button>
+                    </div>
+                    <div class="df-total-box">
+                        <div class="df-total-label">TOTAL &nbsp;(<span id="tab1EditTotalQty">${totalQty}</span> pcs)</div>
+                        <div class="df-total-value" id="tab1EditTotalJual">${fmtRp(totalJual)}</div>
+                    </div>
+                    <hr style="margin:14px 0; border:none; border-top:1px solid var(--line);">
+                    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                        <button type="button" id="tab1BtnTransaksiBatal" class="btn btn-danger df-btn-pill" data-faktur="${escapeHtml(noFaktur)}">❌ Transaksi Batal</button>
+                        <button type="button" id="tab1BtnUbahFaktur" class="btn btn-success df-btn-pill" data-faktur="${escapeHtml(noFaktur)}">✅ Ubah &amp; Simpan</button>
                     </div>
                 `;
             document.getElementById('detailModalGlobal').classList.add('show');
