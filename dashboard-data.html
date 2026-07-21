@@ -1137,6 +1137,53 @@
         .toast.info {
             background: #2d3748;
         }
+        .persistent-alert-wrap {
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            left: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .persistent-alert {
+            pointer-events: auto;
+            background: #b91c1c;
+            color: #fff;
+            border-radius: var(--radius);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+            padding: 10px 14px;
+            max-width: 420px;
+            width: 100%;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 11px;
+            line-height: 1.4;
+            animation: persistentAlertIn 0.2s ease;
+        }
+        @keyframes persistentAlertIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .persistent-alert .pa-icon { font-size: 16px; line-height: 1; }
+        .persistent-alert .pa-msg { flex: 1; white-space: pre-line; }
+        .persistent-alert .pa-close {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            cursor: pointer;
+            font-size: 12px;
+            line-height: 1;
+        }
+        .persistent-alert .pa-close:hover { background: rgba(255,255,255,0.3); }
         .stempel-lunas {
             display: inline-block;
             position: relative;
@@ -4651,6 +4698,7 @@
     </div>
 
     <div class="toast success" id="toastGlobal">🔄 Data dimuat.</div>
+    <div class="persistent-alert-wrap" id="persistentAlertWrap"></div>
 
     <script>
         // ================================================================
@@ -4723,6 +4771,22 @@
             t.classList.add('show');
             clearTimeout(t._hideTimer);
             t._hideTimer = setTimeout(() => t.classList.remove('show'), 2800);
+        }
+
+        // Peringatan PERSISTEN (tidak hilang otomatis) untuk kegagalan
+        // menyimpan ke server/DB, supaya user tidak mengira data sudah
+        // tersimpan padahal sebenarnya gagal (toast biasa terlalu sekilas).
+        function showPersistentAlert(msg, icon) {
+            const wrap = document.getElementById('persistentAlertWrap');
+            if (!wrap) { alert(msg); return null; }
+            const el = document.createElement('div');
+            el.className = 'persistent-alert';
+            el.innerHTML = '<span class="pa-icon">' + (icon || '⚠️') +
+                '</span><span class="pa-msg"></span><button type="button" class="pa-close" title="Tutup">✕</button>';
+            el.querySelector('.pa-msg').textContent = msg;
+            el.querySelector('.pa-close').addEventListener('click', () => el.remove());
+            wrap.appendChild(el);
+            return el;
         }
 
         // ================================================================
@@ -5658,15 +5722,52 @@
             return cashDataMap[cashBulan];
         }
 
+        // Mengembalikan { success: true } jika data BENAR-BENAR tersimpan ke
+        // IndexedDB (db.cashIncome), atau { success: false, error } jika gagal.
+        // Pemanggil WAJIB mengecek hasil ini sebelum menampilkan pesan "Berhasil"
+        // ke user, supaya toast sukses tidak muncul padahal data tidak tersimpan.
         async function saveCashData() {
+            const data = cashDataMap[cashBulan] || [];
+            let saved = false;
+            let saveError = null;
             try {
-                const data = cashDataMap[cashBulan] || [];
                 const existing = await db.cashIncome.where('bulan').equals(cashBulan).first();
-                if (existing) { await db.cashIncome.update(existing.id, { data, tanggal: new Date().toISOString() }); } else {
+                if (existing) {
+                    await db.cashIncome.update(existing.id, { data, tanggal: new Date().toISOString() });
+                } else {
                     await db.cashIncome.add({ bulan: cashBulan, data, tanggal: new Date().toISOString() });
                 }
-                await autoBackupCashToLocalStorage();
-            } catch (e) { showToast('❌ Gagal simpan cash: ' + e.message, 'warning'); }
+                saved = true;
+            } catch (e) {
+                saveError = e;
+                console.error('Gagal simpan cash ke DB:', e);
+            }
+
+            // Verifikasi tambahan: pastikan data yang barusan disimpan memang
+            // benar-benar terbaca kembali dari DB (bukan cuma "tidak error").
+            if (saved) {
+                try {
+                    const check = await db.cashIncome.where('bulan').equals(cashBulan).first();
+                    const savedCount = check && Array.isArray(check.data) ? check.data.length : -1;
+                    if (savedCount !== data.length) {
+                        saved = false;
+                        saveError = new Error('Verifikasi gagal: tersimpan ' + savedCount + ' dari ' + data.length + ' data.');
+                    }
+                } catch (e) {
+                    saved = false;
+                    saveError = e;
+                    console.error('Gagal verifikasi cash setelah simpan:', e);
+                }
+            }
+
+            // Backup ke localStorage bersifat pelengkap saja, tidak menentukan
+            // sukses/gagalnya penyimpanan utama ke DB.
+            try { await autoBackupCashToLocalStorage(); } catch (e) { console.warn('Auto-backup gagal:', e); }
+
+            if (!saved) {
+                return { success: false, error: saveError };
+            }
+            return { success: true };
         }
 
         function getCashData() {
@@ -5830,11 +5931,19 @@
                     } else {
                         cashDataMap[cashBulan] = results;
                     }
-                    await saveCashData();
+                    const saveResult = await saveCashData();
                     renderPemasukan();
                     renderCek();
-                    tampilkanNotifDataBaru('both');
-                    showToast('Berhasil! Total ' + getCashData().length + ' hari.', 'success');
+                    if (saveResult && saveResult.success) {
+                        tampilkanNotifDataBaru('both');
+                        showToast('Berhasil! Total ' + getCashData().length + ' hari.', 'success');
+                    } else {
+                        const errMsg = (saveResult && saveResult.error && saveResult.error.message) ?
+                            saveResult.error.message : 'Penyebab tidak diketahui.';
+                        showPersistentAlert('❌ GAGAL menyimpan data upload ke server/database!\n' +
+                            'Data di layar mungkin TIDAK tersimpan permanen. Jangan pindah tab dulu, ' +
+                            'coba Upload ulang.\nDetail: ' + errMsg);
+                    }
                 } catch (err) {
                     showToast('Gagal baca file: ' + err.message, 'warning');
                 }
@@ -5872,11 +5981,19 @@
                         return;
                     }
                     cashDataMap[cashBulan] = json;
-                    await saveCashData();
+                    const saveResult = await saveCashData();
                     renderPemasukan();
                     renderCek();
-                    tampilkanNotifDataBaru('both');
-                    showToast('Import berhasil! ' + json.length + ' hari.', 'success');
+                    if (saveResult && saveResult.success) {
+                        tampilkanNotifDataBaru('both');
+                        showToast('Import berhasil! ' + json.length + ' hari.', 'success');
+                    } else {
+                        const errMsg = (saveResult && saveResult.error && saveResult.error.message) ?
+                            saveResult.error.message : 'Penyebab tidak diketahui.';
+                        showPersistentAlert('❌ GAGAL menyimpan hasil import JSON ke server/database!\n' +
+                            'Data di layar mungkin TIDAK tersimpan permanen. Jangan pindah tab dulu, ' +
+                            'coba Import ulang.\nDetail: ' + errMsg);
+                    }
                 } catch (err) { showToast('Gagal import: ' + err.message, 'warning'); }
             };
             reader.readAsText(file);
@@ -5887,10 +6004,17 @@
             if (data.length === 0) { showToast('Tidak ada data untuk dihapus.', 'warning'); return; }
             if (!confirm('Yakin hapus semua data untuk bulan ' + cashBulan + '? (' + data.length + ' hari)')) return;
             cashDataMap[cashBulan] = [];
-            await saveCashData();
+            const saveResult = await saveCashData();
             renderPemasukan();
             renderCek();
-            showToast('Data telah dihapus.', 'info');
+            if (saveResult && saveResult.success) {
+                showToast('Data telah dihapus.', 'info');
+            } else {
+                const errMsg = (saveResult && saveResult.error && saveResult.error.message) ?
+                    saveResult.error.message : 'Penyebab tidak diketahui.';
+                showPersistentAlert('❌ GAGAL menghapus data di server/database!\n' +
+                    'Perubahan mungkin TIDAK tersimpan permanen.\nDetail: ' + errMsg);
+            }
         });
         document.getElementById('bulanPemasukan').addEventListener('change', async function() {
             cashBulan = this.value;
