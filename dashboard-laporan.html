@@ -2505,7 +2505,7 @@
     }
 
     function updateUangMasukFilterOptions() {
-        const piutangBulanSet=new Set(); piutangUangMasukData.forEach(d=>{ if(d.tglFaktur) piutangBulanSet.add(d.tglFaktur.slice(0,7)); });
+        const piutangBulanSet=new Set(); piutangUangMasukData.forEach(d=>{ if(d._bulan) piutangBulanSet.add(d._bulan); });
         const piutangSalesSet=new Set(); piutangUangMasukData.forEach(d=>{ if(d.sales && !/^\d+$/.test(d.sales.trim())) piutangSalesSet.add(d.sales); });
         const bulanSelect=document.getElementById('piutangUangMasukBulan'); const curBulan=bulanSelect.value;
         bulanSelect.innerHTML='<option value="">Semua</option>'+Array.from(piutangBulanSet).sort().map(k=>`<option value="${k}">${fmtBulanTahun(k)}</option>`).join('');
@@ -2514,7 +2514,7 @@
         salesSelect.innerHTML='<option value="">Semua</option>'+Array.from(piutangSalesSet).sort().map(s=>`<option value="${s}">${s}</option>`).join('');
         if(curSales&&piutangSalesSet.has(curSales)) salesSelect.value=curSales; else salesSelect.value='';
 
-        const cashBulanSet=new Set(); cashDroppingUangMasukData.forEach(d=>{ if(d.tglFaktur) cashBulanSet.add(d.tglFaktur.slice(0,7)); });
+        const cashBulanSet=new Set(); cashDroppingUangMasukData.forEach(d=>{ if(d._bulan) cashBulanSet.add(d._bulan); });
         const cashSalesSet=new Set(); cashDroppingUangMasukData.forEach(d=>{ if(d.sales && !/^\d+$/.test(d.sales.trim())) cashSalesSet.add(d.sales); });
         const cashBulanSelect=document.getElementById('cashDroppingUangMasukBulan'); const curCashBulan=cashBulanSelect.value;
         cashBulanSelect.innerHTML='<option value="">Semua</option>'+Array.from(cashBulanSet).sort().map(k=>`<option value="${k}">${fmtBulanTahun(k)}</option>`).join('');
@@ -2532,7 +2532,7 @@
         return piutangUangMasukData.filter(d => {
             if(search && !((d.noFaktur||'').toLowerCase().includes(search)||(d.namaToko||'').toLowerCase().includes(search))) return false;
             if(tanggal && d.tglFaktur!==tanggal) return false;
-            if(bulan && (d.tglFaktur||'').slice(0,7)!==bulan) return false;
+            if(bulan && d._bulan!==bulan) return false;
             if(sales && d.sales!==sales) return false;
             return true;
         });
@@ -2546,7 +2546,7 @@
         return cashDroppingUangMasukData.filter(d => {
             if(search && !((d.noFaktur||'').toLowerCase().includes(search)||(d.namaToko||'').toLowerCase().includes(search))) return false;
             if(tanggal && d.tglFaktur!==tanggal) return false;
-            if(bulan && (d.tglFaktur||'').slice(0,7)!==bulan) return false;
+            if(bulan && d._bulan!==bulan) return false;
             if(sales && d.sales!==sales) return false;
             return true;
         });
