@@ -2460,17 +2460,18 @@
         piutangUangMasukData=[]; cashDroppingUangMasukData=[];
         const todayPtUM=new Date(); todayPtUM.setHours(0,0,0,0);
 
-        // Bangun lookup Produk & Kategori dari Bank Data Penjualan (salesData),
+        // Bangun lookup Produk, Kategori & Sales dari Bank Data Penjualan (salesData),
         // dikelompokkan per No.Faktur (satu faktur bisa berisi banyak baris produk).
         const salesByFaktur=new Map();
         salesData.forEach(r => {
             const key=normFaktur(r['No.Faktur']);
             if(!key) return;
-            if(!salesByFaktur.has(key)) salesByFaktur.set(key,{produkSet:new Set(), hasFitri:false});
+            if(!salesByFaktur.has(key)) salesByFaktur.set(key,{produkSet:new Set(), hasFitri:false, salesName:''});
             const entry=salesByFaktur.get(key);
             const produkNama=(r.Produk||'').trim();
             if(produkNama) entry.produkSet.add(produkNama);
             if(produkNama.toLowerCase().includes('fitri')) entry.hasFitri=true;
+            if(!entry.salesName && (r.Sales||'').trim()) entry.salesName=(r.Sales||'').trim();
         });
 
         for(const bulan in cashDataMap){
@@ -2480,6 +2481,7 @@
                     const salesMatch=salesByFaktur.get(normFaktur(d.noFaktur));
                     const isFitri=salesMatch?salesMatch.hasFitri:((d.ket||'').toLowerCase().includes('minyak')||(d.namaToko||'').toLowerCase().includes('fitri'));
                     const produkGabungan=salesMatch&&salesMatch.produkSet.size>0?Array.from(salesMatch.produkSet).join(', '):(d.produk||(isFitri?'Minyak Fitri':'Rupa-Rupa'));
+                    const salesNama=salesMatch&&salesMatch.salesName?salesMatch.salesName:(d.sales||'-');
                     const tagihan=d.tagihan||0;
                     const totalBayar=d.totalBayar!=null?d.totalBayar:((d.bayarCash||0)+(d.bayarTransfer||0));
                     const sisaTagihan=Math.max(0,tagihan-totalBayar);
@@ -2488,12 +2490,13 @@
                     if(statusClass!=='lunas' && d.jt){ const jtDate=ptParseDMY(d.jt); if(jtDate && jtDate<todayPtUM){ statusClass='overdue'; overdueDays=ptDaysBetween(todayPtUM,jtDate); } }
                     let tglBayar='';
                     if(statusClass==='lunas' && day.tanggal){ const dayPart=String(day.tanggal).split('-')[0]; const [tahun,bulanNum]=bulan.split('-'); if(dayPart) tglBayar=`${dayPart.padStart(2,'0')}/${bulanNum}/${tahun}`; }
-                    piutangUangMasukData.push({...d,tglFaktur:d.tglFaktur||day.tanggal,kategori:isFitri?'fitri':'rupa',produk:produkGabungan,jatuhTempo:d.jt||'-',totalBayar,sisaTagihan,statusClass,overdueDays,tglBayar,_bulan:bulan,_tanggalHari:day.tanggal});
+                    piutangUangMasukData.push({...d,sales:salesNama,tglFaktur:d.tglFaktur||day.tanggal,kategori:isFitri?'fitri':'rupa',produk:produkGabungan,jatuhTempo:d.jt||'-',totalBayar,sisaTagihan,statusClass,overdueDays,tglBayar,_bulan:bulan,_tanggalHari:day.tanggal});
                 });
                 (day.cashDroppingDetail||[]).forEach(d => {
                     const salesMatch=salesByFaktur.get(normFaktur(d.noFaktur));
                     const isFitri=salesMatch?salesMatch.hasFitri:((d.ket||'').toLowerCase().includes('minyak')||(d.namaToko||'').toLowerCase().includes('fitri'));
-                    cashDroppingUangMasukData.push({...d,tglFaktur:d.tglFaktur||day.tanggal,kategori:isFitri?'fitri':'rupa',_bulan:bulan,_tanggalHari:day.tanggal});
+                    const salesNama=salesMatch&&salesMatch.salesName?salesMatch.salesName:(d.sales||d.dropping_sales||'-');
+                    cashDroppingUangMasukData.push({...d,sales:salesNama,tglFaktur:d.tglFaktur||day.tanggal,kategori:isFitri?'fitri':'rupa',_bulan:bulan,_tanggalHari:day.tanggal});
                 });
             });
         }
@@ -2503,7 +2506,7 @@
 
     function updateUangMasukFilterOptions() {
         const piutangBulanSet=new Set(); piutangUangMasukData.forEach(d=>{ if(d.tglFaktur) piutangBulanSet.add(d.tglFaktur.slice(0,7)); });
-        const piutangSalesSet=new Set(); piutangUangMasukData.forEach(d=>{ if(d.sales) piutangSalesSet.add(d.sales); });
+        const piutangSalesSet=new Set(); piutangUangMasukData.forEach(d=>{ if(d.sales && !/^\d+$/.test(d.sales.trim())) piutangSalesSet.add(d.sales); });
         const bulanSelect=document.getElementById('piutangUangMasukBulan'); const curBulan=bulanSelect.value;
         bulanSelect.innerHTML='<option value="">Semua</option>'+Array.from(piutangBulanSet).sort().map(k=>`<option value="${k}">${fmtBulanTahun(k)}</option>`).join('');
         if(curBulan&&piutangBulanSet.has(curBulan)) bulanSelect.value=curBulan; else bulanSelect.value='';
@@ -2512,7 +2515,7 @@
         if(curSales&&piutangSalesSet.has(curSales)) salesSelect.value=curSales; else salesSelect.value='';
 
         const cashBulanSet=new Set(); cashDroppingUangMasukData.forEach(d=>{ if(d.tglFaktur) cashBulanSet.add(d.tglFaktur.slice(0,7)); });
-        const cashSalesSet=new Set(); cashDroppingUangMasukData.forEach(d=>{ if(d.sales) cashSalesSet.add(d.sales); });
+        const cashSalesSet=new Set(); cashDroppingUangMasukData.forEach(d=>{ if(d.sales && !/^\d+$/.test(d.sales.trim())) cashSalesSet.add(d.sales); });
         const cashBulanSelect=document.getElementById('cashDroppingUangMasukBulan'); const curCashBulan=cashBulanSelect.value;
         cashBulanSelect.innerHTML='<option value="">Semua</option>'+Array.from(cashBulanSet).sort().map(k=>`<option value="${k}">${fmtBulanTahun(k)}</option>`).join('');
         if(curCashBulan&&cashBulanSet.has(curCashBulan)) cashBulanSelect.value=curCashBulan; else cashBulanSelect.value='';
