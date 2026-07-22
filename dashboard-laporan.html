@@ -1008,10 +1008,11 @@
                         <th>STATUS</th>
                         <th>TGL BAYAR</th>
                         <th class="num">TOTAL DIBAYAR</th>
+                        <th class="num">PROFIT</th>
                         <th>KETERANGAN</th>
                     </tr>
                 </thead>
-                <tbody id="piutangUangMasukBody"><tr><td colspan="14" class="empty-msg">📂 Tidak ada data piutang tempo dari Data Uang Masuk.</td></tr></tbody>
+                <tbody id="piutangUangMasukBody"><tr><td colspan="15" class="empty-msg">📂 Tidak ada data piutang tempo dari Data Uang Masuk.</td></tr></tbody>
             </table>
         </div>
         <div class="pagination" id="piutangUangMasukPager">
@@ -2475,12 +2476,19 @@
         salesData.forEach(r => {
             const key=normFaktur(r['No.Faktur']);
             if(!key) return;
-            if(!salesByFaktur.has(key)) salesByFaktur.set(key,{produkSet:new Set(), hasFitri:false, salesName:''});
+            if(!salesByFaktur.has(key)) salesByFaktur.set(key,{produkSet:new Set(), hasFitri:false, salesName:'', modalTotal:0, modalAda:false});
             const entry=salesByFaktur.get(key);
             const produkNama=(r.Produk||'').trim();
             if(produkNama) entry.produkSet.add(produkNama);
             if(produkNama.toLowerCase().includes('fitri')) entry.hasFitri=true;
             if(!entry.salesName && (r.Sales||'').trim()) entry.salesName=(r.Sales||'').trim();
+            const hargaBeliRaw=r['Harga Beli'];
+            if(hargaBeliRaw!==undefined && hargaBeliRaw!==null && hargaBeliRaw!==''){
+                const hargaBeli=parseNumber(hargaBeliRaw)||0;
+                const qty=parseNumber(r['Jumlah'])||0;
+                entry.modalTotal += hargaBeli*qty;
+                entry.modalAda=true;
+            }
         });
 
         for(const bulan in cashDataMap){
@@ -2499,7 +2507,11 @@
                     if(statusClass!=='lunas' && d.jt){ const jtDate=ptParseDMY(d.jt); if(jtDate && jtDate<todayPtUM){ statusClass='overdue'; overdueDays=ptDaysBetween(todayPtUM,jtDate); } }
                     let tglBayar='';
                     if(statusClass==='lunas' && day.tanggal){ const dayPart=String(day.tanggal).split('-')[0]; const [tahun,bulanNum]=bulan.split('-'); if(dayPart) tglBayar=`${dayPart.padStart(2,'0')}/${bulanNum}/${tahun}`; }
-                    piutangUangMasukData.push({...d,sales:salesNama,tglFaktur:d.tglFaktur||day.tanggal,kategori:isFitri?'fitri':'rupa',produk:produkGabungan,jatuhTempo:d.jt||'-',totalBayar,sisaTagihan,statusClass,overdueDays,tglBayar,_bulan:bulan,_tanggalHari:day.tanggal});
+                    // Profit = uang diterima (Total Dibayar) - (Harga Beli x Qty) dari produk di faktur terkait
+                    const modalTotal=salesMatch?salesMatch.modalTotal:0;
+                    const modalAda=salesMatch?salesMatch.modalAda:false;
+                    const profit=modalAda?(totalBayar-modalTotal):'';
+                    piutangUangMasukData.push({...d,sales:salesNama,tglFaktur:d.tglFaktur||day.tanggal,kategori:isFitri?'fitri':'rupa',produk:produkGabungan,jatuhTempo:d.jt||'-',totalBayar,sisaTagihan,statusClass,overdueDays,tglBayar,profit,_bulan:bulan,_tanggalHari:day.tanggal});
                 });
                 (day.cashDroppingDetail||[]).forEach(d => {
                     const salesMatch=salesByFaktur.get(normFaktur(d.noFaktur));
@@ -2569,9 +2581,10 @@
         const start=(piutangUangMasukPage-1)*UANG_MASUK_ROWS_PER_PAGE;
         const pageRows=filtered.slice(start,start+UANG_MASUK_ROWS_PER_PAGE);
         const tbody=document.getElementById('piutangUangMasukBody');
-        if(pageRows.length===0){ tbody.innerHTML='<tr><td colspan="14" class="empty-msg">📂 Tidak ada data piutang tempo dari Data Uang Masuk.</td></tr>'; }
+        if(pageRows.length===0){ tbody.innerHTML='<tr><td colspan="15" class="empty-msg">📂 Tidak ada data piutang tempo dari Data Uang Masuk.</td></tr>'; }
         else { tbody.innerHTML=pageRows.map((d,i)=>{
             const statusBadge=d.statusClass==='lunas'?'<span class="stempel-lunas">Lunas</span>':`<span class="badge pt-${d.statusClass}">${d.statusClass==='overdue'&&d.overdueDays!=null?`${d.overdueDays} hr/Overdue`:'Belum Lunas'}</span>`;
+            const profitCell=d.profit===''?'<span style="color:#94a3b8;">-</span>':`<span style="${d.profit<0?'color:#b91c1c;font-weight:700;':'color:#15803d;font-weight:700;'}">${fmtRp(d.profit)}</span>`;
             return `<tr class="${d.statusClass==='overdue'?'pt-row-overdue':''}">
                 <td>${d.noFaktur||'-'}</td>
                 <td>${d.tglFaktur||'-'}</td>
@@ -2586,6 +2599,7 @@
                 <td>${statusBadge}</td>
                 <td>${d.tglBayar||'-'}</td>
                 <td class="num">${fmtRp(d.totalBayar)}</td>
+                <td class="num">${profitCell}</td>
                 <td>${d.ket||'-'}</td>
             </tr>`;
         }).join(''); }
