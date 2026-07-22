@@ -5193,17 +5193,17 @@
             }
             async toArray() {
                 try {
-                    const snap = await this.col.get();
+                    const snap = await this.col.get({ source: 'server' });
                     return snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
                 } catch (e) { throw new Error(pesanErrorFirestore(e, 'membaca data (' + this.name + ')')); }
             }
             async count() {
-                try { const snap = await this.col.get(); return snap.size; }
+                try { const snap = await this.col.get({ source: 'server' }); return snap.size; }
                 catch (e) { throw new Error(pesanErrorFirestore(e, 'menghitung data (' + this.name + ')')); }
             }
             async clear() {
                 try {
-                    const snap = await this.col.get();
+                    const snap = await this.col.get({ source: 'server' });
                     const docs = snap.docs;
                     // Dipecah jadi batch maks 450 dokumen (limit Firestore: 500
                     // operasi/batch) supaya tidak gagal "Transaction too big"
@@ -5228,7 +5228,7 @@
                     equals: (value) => ({
                         first: async () => {
                             try {
-                                const snap = await this.col.where(field, '==', value).limit(1).get();
+                                const snap = await this.col.where(field, '==', value).limit(1).get({ source: 'server' });
                                 if (snap.empty) return undefined;
                                 const d = snap.docs[0];
                                 return Object.assign({ id: d.id }, d.data());
