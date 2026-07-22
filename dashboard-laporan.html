@@ -2769,9 +2769,41 @@
     document.getElementById('btnLogoutHeader').addEventListener('click', handleLogoutClick);
     const btnLogoutFloatEl=document.getElementById('btnLogoutFloat'); if(btnLogoutFloatEl) btnLogoutFloatEl.addEventListener('click', handleLogoutClick);
 
-    // Service Worker
+    // Service Worker — dengan deteksi update otomatis
+    // Supaya kalau ada versi baru service-worker.js/HTML di server,
+    // browser langsung pakai versi itu (reload sekali), bukan nyangkut
+    // di cache lama selamanya.
     if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost')){
-        window.addEventListener('load',function(){ navigator.serviceWorker.register('service-worker.js').catch(function(err){ console.warn('Service worker gagal didaftarkan:',err); }); });
+        window.addEventListener('load', function(){
+            navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' })
+                .then(function(reg){
+                    // Cek update setiap kali tab ini aktif kembali (misal habis pindah tab)
+                    document.addEventListener('visibilitychange', function(){
+                        if (document.visibilityState === 'visible') reg.update().catch(function(){});
+                    });
+                    // Ada worker baru yang sedang diinstall
+                    reg.addEventListener('updatefound', function(){
+                        const baru = reg.installing;
+                        if (!baru) return;
+                        baru.addEventListener('statechange', function(){
+                            if (baru.state === 'installed' && navigator.serviceWorker.controller) {
+                                // Ini update (bukan install pertama kali) -> aktifkan segera
+                                baru.postMessage('SKIP_WAITING');
+                            }
+                        });
+                    });
+                })
+                .catch(function(err){ console.warn('Service worker gagal didaftarkan:',err); });
+
+            // Sekali service worker baru mengambil alih, reload halaman supaya
+            // kode terbaru langsung dipakai. Guard dengan flag supaya cuma reload 1x.
+            let sudahReload = false;
+            navigator.serviceWorker.addEventListener('controllerchange', function(){
+                if (sudahReload) return;
+                sudahReload = true;
+                location.reload();
+            });
+        });
     }
     </script>
 </body>
