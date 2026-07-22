@@ -1392,7 +1392,11 @@
             const existing = await db.cashIncome.where('bulan').equals(cashBulan).first();
             if (existing) { await db.cashIncome.update(existing.id, { data, tanggal: new Date().toISOString() }); }
             else { await db.cashIncome.add({ bulan:cashBulan, data, tanggal:new Date().toISOString() }); }
-        } catch(e) { showToast('❌ Gagal simpan cash: '+e.message, 'warning'); }
+            return true;
+        } catch(e) {
+            showToast('❌ GAGAL simpan ke server: '+e.message+' — data baru BELUM tersimpan permanen, jangan pindah tab/dashboard dulu, coba Upload ulang.', 'warning');
+            return false;
+        }
     }
     function getCashData() { if (!cashDataMap[cashBulan]) cashDataMap[cashBulan] = []; return cashDataMap[cashBulan]; }
 
@@ -1495,20 +1499,20 @@
                 if(results.length===0){ showToast('Tidak ada data ditemukan.','warning'); return; }
                 const current=getCashData();
                 if(current.length>0){
-                    if(!confirm('Data saat ini '+current.length+' hari. Tambahkan '+results.length+' hari baru?')){
-                        cashDataMap[cashBulan]=results;
-                    } else {
-                        const existing=new Set(current.map(d=>d.tanggal));
-                        results.forEach(newItem=>{ if(!existing.has(newItem.tanggal)) current.push(newItem); else { const idx=current.findIndex(d=>d.tanggal===newItem.tanggal); if(idx!==-1) current[idx]=newItem; } });
-                        cashDataMap[cashBulan]=current;
-                    }
+                    const gabungkan=confirm('Data saat ini '+current.length+' hari. Gabungkan dengan '+results.length+' hari dari file ini?\n\n(Klik Cancel untuk BATAL upload — data lama tidak akan diubah sama sekali.)');
+                    if(!gabungkan){ showToast('Upload dibatalkan. Data lama tidak diubah.','info'); return; }
+                    const existing=new Set(current.map(d=>d.tanggal));
+                    results.forEach(newItem=>{ if(!existing.has(newItem.tanggal)) current.push(newItem); else { const idx=current.findIndex(d=>d.tanggal===newItem.tanggal); if(idx!==-1) current[idx]=newItem; } });
+                    cashDataMap[cashBulan]=current;
                 } else { cashDataMap[cashBulan]=results; }
-                await saveCashData();
+                const tersimpan=await saveCashData();
                 renderPemasukan();
                 renderCek();
-                tampilkanNotifDataBaru('both');
-                refreshPiutangUangMasuk();
-                showToast('Berhasil! Total '+getCashData().length+' hari.','success');
+                if(tersimpan){
+                    tampilkanNotifDataBaru('both');
+                    refreshPiutangUangMasuk();
+                    showToast('✅ Berhasil tersimpan ke server! Total '+getCashData().length+' hari.','success');
+                }
             } catch(err) { showToast('Gagal baca file: '+err.message,'warning'); }
         };
         reader.readAsArrayBuffer(file);
