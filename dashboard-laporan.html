@@ -1386,6 +1386,10 @@
             const currentRecord = await db.cashIncome.where('bulan').equals(cashBulan).first();
             if (currentRecord) { cashDataMap[cashBulan] = currentRecord.data || []; }
             else { if (!cashDataMap[cashBulan]) cashDataMap[cashBulan] = []; }
+            console.log('[LOAD] bulan='+cashBulan+', rows='+(cashDataMap[cashBulan]||[]).length+', totalDocs='+allRecords.length, {
+                allBulans: Object.keys(cashDataMap),
+                timestamp: new Date().toISOString()
+            });
             console.info('[GAMAS] loadCashData OK — bulan='+cashBulan+', hari='+ (cashDataMap[cashBulan]||[]).length +', totalDokumen='+allRecords.length);
         } catch(e) {
             console.error('[GAMAS] Error loading cash data:', e);
@@ -1430,6 +1434,10 @@
     async function saveCashData() {
         try {
             const data = cashDataMap[cashBulan] || [];
+            console.log('[SAVE] bulan='+cashBulan+', rows='+data.length, {
+                first3: data.slice(0,3),
+                timestamp: new Date().toISOString()
+            });
             const existing = await db.cashIncome.where('bulan').equals(cashBulan).first();
             let idTersimpan;
             if (existing) { await db.cashIncome.update(existing.id, { data, tanggal: new Date().toISOString() }); idTersimpan=existing.id; }
@@ -1450,9 +1458,33 @@
                     }
                     const dataServer = (snap.data()||{}).data || [];
                     if (dataServer.length !== data.length) {
+                        console.error('[VERIFY FAIL] Count mismatch: server='+dataServer.length+' vs local='+data.length, {dataServer, data});
                         showToast('⚠️ Data di server baru '+dataServer.length+' dari '+data.length+' hari — sepertinya koneksi terputus saat menyimpan. Pastikan internet stabil lalu Upload ulang.', 'warning');
                         return false;
                     }
+                    
+                    // IMPROVEMENT: Jika ada data, verify sample data (first dan last untuk cek integritas)
+                    if(data.length > 0) {
+                        const firstServer = dataServer[0];
+                        const lastServer = dataServer[dataServer.length-1];
+                        const firstLocal = data[0];
+                        const lastLocal = data[data.length-1];
+                        
+                        const firstMatch = firstServer && firstServer.tanggal === firstLocal.tanggal;
+                        const lastMatch = lastServer && lastServer.tanggal === lastLocal.tanggal;
+                        
+                        if(!firstMatch || !lastMatch) {
+                            console.error('[VERIFY FAIL] Data value mismatch:', {
+                                first: {server: firstServer?.tanggal, local: firstLocal.tanggal, match: firstMatch},
+                                last: {server: lastServer?.tanggal, local: lastLocal.tanggal, match: lastMatch}
+                            });
+                            showToast('⚠️ Data di server berbeda dari yang dikirim (tanggal tidak cocok)! Cek koneksi dan coba lagi.', 'warning');
+                            return false;
+                        }
+                    }
+                    
+                    console.log('[VERIFY OK] Data count='+data.length+' match dengan server');
+                    
                 } catch(verErr) {
                     showToast('⚠️ Tidak bisa memastikan data sudah sampai ke server ('+(verErr&&verErr.message?verErr.message:verErr)+'). Data BISA JADI baru tersimpan lokal saja — pastikan internet stabil, jangan tutup halaman, lalu cek lagi.', 'warning');
                     return false;
@@ -1596,31 +1628,105 @@
     });
     document.getElementById('pemasukanImportBtn').addEventListener('click', function(){ document.getElementById('pemasukanImportFileInput').click(); });
     document.getElementById('pemasukanImportFileInput').addEventListener('change', async function(e) {
-        const file=e.target.files[0]; if(!file) return;
+        const file=e.target.files[0]; 
+        if(!file) return;
+        
         const reader=new FileReader();
         reader.onload=async function(e) {
             try {
+                // Step 1: Parse dan validate data
                 const json=JSON.parse(e.target.result);
-                if(!Array.isArray(json)||json.length===0){ showToast('File tidak valid.','warning'); return; }
+                if(!Array.isArray(json)||json.length===0){ 
+                    showToast('File tidak valid.','warning'); 
+                    return; 
+                }
+                
+                // Step 2: Filter hanya data yang valid - pastikan struktur benar
+                const validData = json.filter(item => {
+                    return item.tanggal && 
+                           typeof item.totalCash === 'number' &&
+                           typeof item.totalTransfer === 'number';
+                });
+                
+                if(validData.length === 0) {
+                    showToast('❌ Tidak ada data valid dalam file.','warning');
+                    console.error('[IMPORT] Semua baris invalid:', json.slice(0,3));
+                    return;
+                }
+                
+                if(validData.length !== json.length) {
+                    showToast('⚠️ File: '+json.length+' baris, valid: '+validData.length,'warning');
+                    if(!confirm('Lanjutkan import '+validData.length+' data yang valid?\n\n('+( json.length - validData.length)+' baris akan diabaikan)')) return;
+                }
+                
+                // Step 3: Compare dengan data saat ini
+                console.log('[IMPORT START] bulan='+cashBulan+', rows='+validData.length);
                 await loadCashData();
                 const current=getCashData();
-                if(current.length>0 && !confirm('Ganti '+current.length+' data dengan '+json.length+' dari file?')) return;
-                cashDataMap[cashBulan]=json;
-                await saveCashData();
+                if(current.length>0 && !confirm('Bulan '+cashBulan+' sudah ada '+current.length+' hari.\n\nGanti dengan '+validData.length+' hari dari file?')) 
+                    return;
+                
+                // Step 4: Simpan dengan explicit result check
+                cashDataMap[cashBulan]=validData;
+                
+                // PENTING: Check hasil saveCashData sebelum show success
+                const hasilSave = await saveCashData();
+                
+                if(!hasilSave) {
+                    showToast('❌ Upload GAGAL — data tidak tersimpan ke server. Cek koneksi internet dan coba lagi.','danger');
+                    console.error('[IMPORT FAIL] saveCashData returned false');
+                    return;
+                }
+                
+                // Step 5: Baru tampilkan success SETELAH verify berhasil
+                console.log('[IMPORT OK] '+validData.length+' hari tersimpan ke server');
                 renderPemasukan();
                 renderCek();
                 refreshPiutangUangMasuk();
                 tampilkanNotifDataBaru('both');
-                showToast('Import berhasil! '+json.length+' hari.','success');
-            } catch(err){ showToast('Gagal import: '+err.message,'warning'); }
+                showToast('✅ Import berhasil! '+validData.length+' hari tersimpan di server.','success');
+                
+            } catch(err){ 
+                console.error('[IMPORT ERROR]', err);
+                showToast('❌ Gagal import: '+err.message,'warning'); 
+            }
         };
         reader.readAsText(file);
         this.value='';
     });
     document.getElementById('pemasukanHapusBtn').addEventListener('click', async function() {
-        const data=getCashData(); if(data.length===0){ showToast('Tidak ada data untuk dihapus.','warning'); return; }
+        const data=getCashData(); 
+        if(data.length===0){ showToast('Tidak ada data untuk dihapus.','warning'); return; }
         if(!confirm('Yakin hapus semua data untuk bulan '+cashBulan+'? ('+data.length+' hari)')) return;
-        cashDataMap[cashBulan]=[]; await saveCashData(); renderPemasukan(); renderCek(); refreshPiutangUangMasuk(); showToast('Data telah dihapus.','info');
+        
+        // Step 1: Clear dari memory
+        cashDataMap[cashBulan]=[]; 
+        
+        // Step 2: Hapus dari Dexie + Firestore (PENTING untuk mencegah data muncul lagi saat refresh)
+        try {
+            const existing = await db.cashIncome.where('bulan').equals(cashBulan).first();
+            if (existing) {
+                // Hapus dari Dexie
+                await db.cashIncome.delete(existing.id);
+                console.log('[DELETE] Dihapus dari Dexie: bulan='+cashBulan);
+                
+                // PENTING: Juga hapus dari Firestore supaya tidak muncul lagi saat reload
+                if (firestoreSiap) {
+                    await fsdb.collection('cashIncome').doc(String(existing.id)).delete();
+                    console.log('[DELETE] Dihapus dari Firestore: id='+existing.id+' bulan='+cashBulan);
+                }
+            }
+        } catch(err) {
+            console.error('Delete error:', err);
+            showToast('⚠️ Gagal hapus dari server: '+err.message, 'warning');
+            return;
+        }
+        
+        // Step 3: Update UI
+        renderPemasukan(); 
+        renderCek(); 
+        refreshPiutangUangMasuk(); 
+        showToast('✅ Data telah dihapus dari server.','success');
     });
     document.getElementById('bulanPemasukan').addEventListener('change', async function() {
         cashBulan=this.value; await loadCashData(); renderPemasukan();
@@ -2854,6 +2960,19 @@
             const bulanSelect=document.getElementById('bulanPemasukan');
             let found=false; for(let opt of bulanSelect.options){ if(opt.value===defaultBulan){ opt.selected=true; found=true; break; } } if(!found) bulanSelect.value='2026-07'; cashBulan=bulanSelect.value;
             await loadCashData();
+            
+            // FIX: Cleanup duplicate cashIncome documents on startup
+            console.log('[STARTUP] Cleaning up duplicate cashIncome documents...');
+            try {
+                const hasilBeres = await beresinDuplikatCashIncome();
+                if(hasilBeres && hasilBeres.length > 0) {
+                    console.log('[CLEANUP OK] Duplikat dibersihkan:', hasilBeres);
+                    showToast('🔧 '+hasilBeres.length+' bulan berhasil dibersihkan dari dokumen duplikat.', 'info');
+                }
+            } catch(err) {
+                console.warn('[CLEANUP] Non-critical error:', err);
+            }
+            
             await loadAllCashDataBeforePtRefresh();
             renderPemasukan();
             renderSales();
