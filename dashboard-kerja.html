@@ -5673,14 +5673,52 @@
                     equals: (value) => ({
                         first: async () => {
                             try {
-                                const snap = await this.col.where(field, '==', value).limit(1).get();
+                                // PENTING: sebelumnya pakai .limit(1) TANPA sorting — kalau ada
+                                // dokumen duplikat untuk 'value' yang sama (bisa terjadi karena
+                                // race dengan dashboard lain yang menulis ke koleksi yang sama),
+                                // Firestore mengembalikan dokumen secara ARBITRER, bukan yang
+                                // terbaru. Sekarang ambil semua yang cocok, pilih yang timestamp
+                                // 'tanggal'-nya paling baru.
+                                const snap = await this.col.where(field, '==', value).get();
                                 if (snap.empty) return undefined;
-                                const d = snap.docs[0];
-                                return Object.assign({ id: d.id }, d.data());
+                                let docs = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+                                if (docs.length > 1) docs.sort((a, b) => String(b.tanggal || '').localeCompare(String(a.tanggal || '')));
+                                return docs[0];
                             } catch (e) { throw new Error(pesanErrorFirestore(e, 'mencari data (' + this.name + ')')); }
                         }
                     })
                 };
+            }
+            // PENTING: method ini untuk menyisipkan/mengganti SATU HARI ke dalam dokumen bulan,
+            // memakai Firestore transaction supaya baca+gabung+tulis jadi ATOMIK. Ini mencegah
+            // race condition dengan proses simpan lain (mis. dashboard-laporan.html menulis ke
+            // dokumen bulan yang sama di waktu berdekatan) — sebelumnya pola baca-lalu-tulis
+            // terpisah bisa membuat versi lama menang cuma karena timestamp-nya kebetulan lebih
+            // baru, walau datanya lebih basi (menyebabkan hari yang baru diinput hilang lagi
+            // setelah pindah dashboard/reload).
+            async mergeSingleDay(bulan, dayRecord, matchFn) {
+                try {
+                    const q = await this.col.where('bulan', '==', bulan).get();
+                    let ref;
+                    if (q.empty) {
+                        ref = this.col.doc();
+                        await ref.set(bersihkanUntukFirestore({ bulan, data: [dayRecord], tanggal: new Date().toISOString() }));
+                        return;
+                    }
+                    let docs = q.docs;
+                    if (docs.length > 1) docs = docs.slice().sort((a, b) => String((b.data().tanggal) || '').localeCompare(String((a.data().tanggal) || '')));
+                    ref = docs[0].ref;
+                    await fsdb.runTransaction(async (tx) => {
+                        const snap = await tx.get(ref); // baca ULANG di dalam transaksi = data paling mutakhir
+                        const current = snap.exists ? (snap.data().data || []) : [];
+                        const cocok = typeof matchFn === 'function' ? matchFn : (d => d.tanggal === dayRecord.tanggal);
+                        const idx = current.findIndex(cocok);
+                        if (idx >= 0) current[idx] = dayRecord; else current.push(dayRecord);
+                        tx.set(ref, bersihkanUntukFirestore({ bulan, data: current, tanggal: new Date().toISOString() }), { merge: false });
+                    });
+                } catch (e) {
+                    throw new Error(pesanErrorFirestore(e, 'menyimpan data harian (' + this.name + ')'));
+                }
             }
             // ------------------------------------------------------------------
             // SIMPAN INKREMENTAL: hanya kirim baris yang baru/berubah/dihapus,
@@ -6322,10 +6360,26 @@
         // ================================================================
         // FUNGSI CASH (Tab 2) – disingkat
         // ================================================================
+        // PENTING: cache singkat (30 detik) untuk baca seluruh koleksi cashIncome.
+        // Sebelumnya SETIAP pindah tab/dashboard memicu query penuh ke server,
+        // yang cepat menghabiskan kuota baca harian Firestore (plan gratis/Spark
+        // punya limit harian). Dengan cache ini, gonta-ganti tab dalam rentang
+        // 30 detik cukup pakai data yang sudah ada di memori.
+        let _cashAllCache = null, _cashAllCacheTime = 0;
+        const CASH_CACHE_TTL_MS = 30000;
+        async function ambilSemuaCashIncomeCached(paksaFresh) {
+            const now = Date.now();
+            if (!paksaFresh && _cashAllCache && (now - _cashAllCacheTime) < CASH_CACHE_TTL_MS) {
+                return _cashAllCache;
+            }
+            const allRecords = await db.cashIncome.toArray();
+            _cashAllCache = allRecords; _cashAllCacheTime = now;
+            return allRecords;
+        }
         // Load ALL cash data from database - used before ptRefresh
         async function loadAllCashDataBeforePtRefresh() {
             try {
-                const allRecords = await db.cashIncome.toArray();
+                const allRecords = await ambilSemuaCashIncomeCached(false);
                 console.log('Loading all cash data records:', allRecords.length);
                 allRecords.forEach(record => {
                     if (record.bulan && Array.isArray(record.data)) {
@@ -6341,14 +6395,15 @@
         async function loadCashData() {
             try {
                 // Load data dari SEMUA bulan, bukan hanya cashBulan
-                const allRecords = await db.cashIncome.toArray();
+                const allRecords = await ambilSemuaCashIncomeCached(false);
                 allRecords.forEach(record => {
                     if (record.bulan && Array.isArray(record.data)) {
                         cashDataMap[record.bulan] = record.data;
                     }
                 });
-                // Juga pastikan cashBulan selalu ada
-                const currentRecord = await db.cashIncome.where('bulan').equals(cashBulan).first();
+                // Dulu di sini ada query kedua (where('bulan').equals(cashBulan).first())
+                // yang mubazir karena datanya sudah ada di 'allRecords' hasil query di atas.
+                const currentRecord = allRecords.find(r => r.bulan === cashBulan);
                 if (currentRecord) { 
                     cashDataMap[cashBulan] = currentRecord.data || []; 
                 } else { 
@@ -6368,6 +6423,7 @@
                 if (existing) { await db.cashIncome.update(existing.id, { data, tanggal: new Date().toISOString() }); } else {
                     await db.cashIncome.add({ bulan: cashBulan, data, tanggal: new Date().toISOString() });
                 }
+                _cashAllCacheTime = 0; // invalidate cache segera setelah menulis
                 await autoBackupCashToLocalStorage();
             } catch (e) { showToast('❌ Gagal simpan cash: ' + e.message, 'warning'); }
         }
@@ -10302,7 +10358,7 @@
         let inputHarianDirty = false;
         const autoSimpanHarianDebounced = debounce(function() {
             simpanDataHarian(true);
-        }, 1500);
+        }, 3500); // dinaikkan dari 1500ms — kurangi frekuensi tulis ke server saat mengetik
 
         function tandaiInputHarianBerubah() {
             inputHarianDirty = true;
@@ -10669,25 +10725,38 @@
             const dayRecord = { tanggal: tanggalKey, piutangCash, piutangTransfer, penjualanCash, penjualanTransfer,
                 totalCash, totalTransfer, grandTotal, piutangDetail, cashDroppingDetail };
 
-            // PENTING: SELALU ambil data TERBARU dari server di sini (bukan dari
-            // cashDataMap di memori, yang bisa basi kalau ada perubahan dari
-            // halaman/tab lain sejak terakhir dimuat). Auto-save ini jalan tiap
-            // 1.5 detik & saat pindah tanggal/dashboard, jadi kalau pakai cache
-            // basi, data hari lain yang baru diupload di tempat lain bisa tertimpa hilang.
-            let list;
-            try {
-                const rec = await db.cashIncome.where('bulan').equals(bulanKey).first();
-                list = rec ? (rec.data || []) : [];
-            } catch (e) { list = cashDataMap[bulanKey] || []; }
-            const existingIdx = list.findIndex(it => normDDMM(it.tanggal) === normDDMM(tanggalKey));
-            if (existingIdx >= 0) list[existingIdx] = dayRecord; else list.push(dayRecord);
-            cashDataMap[bulanKey] = list;
-
-            const existing = await db.cashIncome.where('bulan').equals(bulanKey).first();
-            if (existing) {
-                await db.cashIncome.update(existing.id, { data: list, tanggal: new Date().toISOString() });
+            // PENTING: dulu di sini pola baca-lalu-tulis terpisah (baca dari server,
+            // ubah 1 hari, tulis balik SEMUA hari) — ini TIDAK atomik. Kalau ada proses
+            // simpan lain (mis. dashboard-laporan.html menulis ke dokumen bulan yang
+            // sama di waktu berdekatan) versi yang dibaca di sini bisa basi, dan
+            // tulisan balik yang basi itu malah MENANG karena timestamp-nya kebetulan
+            // lebih baru — akibatnya hari yang baru diinput di tempat lain hilang lagi
+            // setelah pindah dashboard/reload. Sekarang pakai Firestore transaction
+            // (mergeSingleDay) yang baca+gabung+tulis dalam satu operasi atomik.
+            if (firestoreSiap) {
+                try {
+                    await db.cashIncome.mergeSingleDay(bulanKey, dayRecord, d => normDDMM(d.tanggal) === normDDMM(tanggalKey));
+                    cashDataMap[bulanKey] = (await db.cashIncome.where('bulan').equals(bulanKey).first())?.data || cashDataMap[bulanKey] || [];
+                    _cashAllCacheTime = 0; // invalidate cache biar tampilan sinkron dengan server
+                } catch (e) {
+                    showToast('⚠️ Gagal sinkron data harian ke server: ' + (e && e.message ? e.message : e), 'warning');
+                }
             } else {
-                await db.cashIncome.add({ bulan: bulanKey, data: list, tanggal: new Date().toISOString() });
+                let list;
+                try {
+                    const rec = await db.cashIncome.where('bulan').equals(bulanKey).first();
+                    list = rec ? (rec.data || []) : [];
+                } catch (e) { list = cashDataMap[bulanKey] || []; }
+                const existingIdx = list.findIndex(it => normDDMM(it.tanggal) === normDDMM(tanggalKey));
+                if (existingIdx >= 0) list[existingIdx] = dayRecord; else list.push(dayRecord);
+                cashDataMap[bulanKey] = list;
+
+                const existing = await db.cashIncome.where('bulan').equals(bulanKey).first();
+                if (existing) {
+                    await db.cashIncome.update(existing.id, { data: list, tanggal: new Date().toISOString() });
+                } else {
+                    await db.cashIncome.add({ bulan: bulanKey, data: list, tanggal: new Date().toISOString() });
+                }
             }
 
             if (bulanKey === cashBulan) {

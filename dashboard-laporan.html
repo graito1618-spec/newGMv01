@@ -1312,6 +1312,34 @@
         async clear() { try { const snap=await this.col.get({source:'server'}); const docs=snap.docs; for (let i=0; i<docs.length; i+=450) { const batch=fsdb.batch(); docs.slice(i,i+450).forEach(d=>batch.delete(d.ref)); await batch.commit(); } } catch(e) { throw new Error(pesanErrorFirestore(e,'mengosongkan data ('+this.name+')')); } }
         async delete(id) { try { await this.col.doc(String(id)).delete(); } catch(e) { throw new Error(pesanErrorFirestore(e,'menghapus data ('+this.name+')')); } }
         async update(id, changes) { try { await this.col.doc(String(id)).set(bersihkanUntukFirestore(changes),{merge:true}); } catch(e) { throw new Error(pesanErrorFirestore(e,'memperbarui data ('+this.name+')')); } }
+        // PENTING: method ini untuk menyisipkan/mengganti SATU HARI ke dalam dokumen bulan,
+        // memakai Firestore transaction supaya baca+gabung+tulis jadi ATOMIK. Ini mencegah
+        // race condition dengan proses simpan lain (mis. import/edit tabel Data Uang Masuk)
+        // yang menulis ke dokumen bulan yang sama di waktu yang berdekatan — sebelumnya pola
+        // baca-lalu-tulis terpisah bisa membuat versi lama menang cuma karena timestamp-nya
+        // kebetulan lebih baru, walau datanya lebih basi (menyebabkan hari yang baru diinput
+        // hilang lagi setelah pindah dashboard/reload).
+        async mergeSingleDay(bulan, dayRecord) {
+            try {
+                const q = await this.col.where('bulan', '==', bulan).get({ source: 'server' });
+                if (q.empty) {
+                    await this.col.add(bersihkanUntukFirestore({ bulan, data: [dayRecord], tanggal: new Date().toISOString() }));
+                    return;
+                }
+                let docs = q.docs;
+                if (docs.length > 1) docs = docs.slice().sort((a,b)=>String((b.data().tanggal)||'').localeCompare(String((a.data().tanggal)||'')));
+                const ref = docs[0].ref;
+                await fsdb.runTransaction(async (tx) => {
+                    const snap = await tx.get(ref); // baca ULANG di dalam transaksi = data paling mutakhir
+                    const current = snap.exists ? (snap.data().data || []) : [];
+                    const idx = current.findIndex(d => d.tanggal === dayRecord.tanggal);
+                    if (idx >= 0) current[idx] = dayRecord; else current.push(dayRecord);
+                    tx.set(ref, bersihkanUntukFirestore({ bulan, data: current, tanggal: new Date().toISOString() }), { merge: false });
+                });
+            } catch (e) {
+                throw new Error(pesanErrorFirestore(e, 'menyimpan data harian (' + this.name + ')'));
+            }
+        }
         where(field) { return { equals: (value) => ({ first: async () => { try { const snap=await this.col.where(field,'==',value).get({source:'server'}); if (snap.empty) return undefined; let docs=snap.docs.map(d=>Object.assign({id:d.id},d.data())); if (docs.length>1) { docs.sort((a,b)=>String(b.tanggal||'').localeCompare(String(a.tanggal||''))); } return docs[0]; } catch(e) { throw new Error(pesanErrorFirestore(e,'mencari data ('+this.name+')')); } } }) }; }
         async syncRows(currentRows, docIdMap, snapshotMap) {
             try {
@@ -1371,19 +1399,37 @@
     // ================================================================
     // FUNGSI CASH (Tab 2)
     // ================================================================
+    // PENTING: cache singkat (30 detik) untuk baca seluruh koleksi cashIncome.
+    // Sebelumnya SETIAP pindah tab/dashboard memicu query penuh ke server,
+    // yang cepat menghabiskan kuota baca harian Firestore (plan gratis/Spark
+    // punya limit harian). Dengan cache ini, gonta-ganti tab dalam rentang
+    // 30 detik cukup pakai data yang sudah ada di memori.
+    let _cashAllCache = null, _cashAllCacheTime = 0;
+    const CASH_CACHE_TTL_MS = 30000;
+    async function ambilSemuaCashIncomeCached(paksaFresh) {
+        const now = Date.now();
+        if (!paksaFresh && _cashAllCache && (now - _cashAllCacheTime) < CASH_CACHE_TTL_MS) {
+            return _cashAllCache;
+        }
+        const allRecords = await db.cashIncome.toArray();
+        _cashAllCache = allRecords; _cashAllCacheTime = now;
+        return allRecords;
+    }
     async function loadAllCashDataBeforePtRefresh() {
         try {
-            const allRecords = await db.cashIncome.toArray();
+            const allRecords = await ambilSemuaCashIncomeCached(false);
             allRecords.forEach(record => { if (record.bulan && Array.isArray(record.data)) { cashDataMap[record.bulan] = record.data; } });
         } catch(e) { console.error('Error loading all cash data:', e); }
     }
     async function loadCashData() {
         try {
             const hasilBeres=await beresinDuplikatCashIncome();
-            if (hasilBeres && hasilBeres.length) { showToast('🔧 Ditemukan & digabungkan dokumen ganda di server untuk: '+hasilBeres.join(', ')+'.', 'info'); }
-            const allRecords = await db.cashIncome.toArray();
+            if (hasilBeres && hasilBeres.length) { showToast('🔧 Ditemukan & digabungkan dokumen ganda di server untuk: '+hasilBeres.join(', ')+'.', 'info'); _cashAllCacheTime = 0; }
+            const allRecords = await ambilSemuaCashIncomeCached(false);
             allRecords.forEach(record => { if (record.bulan && Array.isArray(record.data)) { cashDataMap[record.bulan] = record.data; } });
-            const currentRecord = await db.cashIncome.where('bulan').equals(cashBulan).first();
+            // Dulu di sini ada query kedua (where('bulan').equals(cashBulan).first()) yang
+            // mubazir karena datanya sudah ada di 'allRecords' hasil query di atas.
+            const currentRecord = allRecords.find(r => r.bulan === cashBulan);
             if (currentRecord) { cashDataMap[cashBulan] = currentRecord.data || []; }
             else { if (!cashDataMap[cashBulan]) cashDataMap[cashBulan] = []; }
             console.log('[LOAD] bulan='+cashBulan+', rows='+(cashDataMap[cashBulan]||[]).length+', totalDocs='+allRecords.length, {
@@ -1425,6 +1471,7 @@
                 const docTerbaru = docs[docs.length-1];
                 await db.cashIncome.update(docTerbaru.id, { data: dataGabungan, tanggal: new Date().toISOString() });
                 for (const doc of docs) { if (doc.id !== docTerbaru.id) { await db.cashIncome.delete(doc.id); } }
+                _cashAllCacheTime = 0; // data berubah, cache jadi tidak valid
                 console.warn('🔧 [GAMAS] Digabungkan '+docs.length+' dokumen duplikat cashIncome untuk bulan '+bulanKey+' menjadi 1 ('+dataGabungan.length+' hari).');
                 dibereskan.push(bulanKey+' ('+docs.length+' dok → '+dataGabungan.length+' hari)');
             }
@@ -1442,6 +1489,7 @@
             let idTersimpan;
             if (existing) { await db.cashIncome.update(existing.id, { data, tanggal: new Date().toISOString() }); idTersimpan=existing.id; }
             else { idTersimpan = await db.cashIncome.add({ bulan:cashBulan, data, tanggal:new Date().toISOString() }); }
+            _cashAllCacheTime = 0; // invalidate cache segera setelah menulis
             // PENTING: Firestore dengan enablePersistence() akan menganggap penulisan "sukses"
             // begitu tersimpan di CACHE LOKAL perangkat — belum tentu sudah benar-benar sampai
             // ke server (misal koneksi ke Firestore sedang terganggu/diblokir, sering terjadi di
@@ -1484,6 +1532,7 @@
                     }
                     
                     console.log('[VERIFY OK] Data count='+data.length+' match dengan server');
+                    _cashAllCacheTime = 0; // data berubah di server, cache lokal jadi tidak valid
                     
                 } catch(verErr) {
                     showToast('⚠️ Tidak bisa memastikan data sudah sampai ke server ('+(verErr&&verErr.message?verErr.message:verErr)+'). Data BISA JADI baru tersimpan lokal saja — pastikan internet stabil, jangan tutup halaman, lalu cek lagi.', 'warning');
@@ -2402,7 +2451,7 @@
     // TAB 7 – PEMBAYARAN (INPUT HARIAN)
     // ================================================================
     let inputHarianDirty=false;
-    const autoSimpanHarianDebounced=debounce(function(){ simpanDataHarian(true); },1500);
+    const autoSimpanHarianDebounced=debounce(function(){ simpanDataHarian(true); },3500); // dinaikkan dari 1500ms — kurangi frekuensi tulis ke server saat mengetik
     function tandaiInputHarianBerubah(){ inputHarianDirty=true; autoSimpanHarianDebounced(); }
     async function flushSimpanHarianJikaBerubah(){ if(inputHarianDirty){ await simpanDataHarian(true); } }
 
@@ -2479,14 +2528,29 @@
         const penjualanCash=sum(cashDroppingDetail,'bayarCash'); const penjualanTransfer=sum(cashDroppingDetail,'bayarTransfer');
         const totalCash=piutangCash+penjualanCash; const totalTransfer=piutangTransfer+penjualanTransfer; const grandTotal=totalCash+totalTransfer;
         const dayRecord={tanggal:tanggalKey,piutangCash,piutangTransfer,penjualanCash,penjualanTransfer,totalCash,totalTransfer,grandTotal,piutangDetail,cashDroppingDetail};
-        // PENTING: SELALU ambil data TERBARU dari server di sini (bukan dari
-        // cashDataMap di memori, yang bisa basi kalau ada perubahan dari
-        // halaman/tab lain sejak terakhir dimuat). Auto-save ini jalan tiap
-        // 1.5 detik & saat pindah tanggal/dashboard, jadi kalau pakai cache
-        // basi, data hari lain yang baru diupload di tempat lain bisa tertimpa hilang.
-        let list; try { const rec=await db.cashIncome.where('bulan').equals(bulanKey).first(); list=rec?(rec.data||[]):[]; } catch(e){ list=cashDataMap[bulanKey]||[]; }
-        const existingIdx=list.findIndex(it=>it.tanggal===tanggalKey); if(existingIdx>=0) list[existingIdx]=dayRecord; else list.push(dayRecord); cashDataMap[bulanKey]=list;
-        const existing=await db.cashIncome.where('bulan').equals(bulanKey).first(); if(existing){ await db.cashIncome.update(existing.id,{data:list,tanggal:new Date().toISOString()}); } else { await db.cashIncome.add({bulan:bulanKey,data:list,tanggal:new Date().toISOString()}); }
+        // PENTING: dulu di sini pola baca-lalu-tulis terpisah (baca dari server,
+        // ubah 1 hari, tulis balik SEMUA hari) — ini TIDAK atomik. Kalau ada proses
+        // simpan lain (mis. import/edit tabel Data Uang Masuk) menulis ke dokumen
+        // bulan yang sama di waktu berdekatan, versi yang dibaca di sini bisa basi,
+        // dan tulisan balik yang basi itu malah MENANG karena timestamp-nya kebetulan
+        // lebih baru — akibatnya hari yang baru diinput di tempat lain hilang lagi
+        // setelah pindah dashboard/reload. Sekarang pakai Firestore transaction
+        // (mergeSingleDay) yang baca+gabung+tulis dalam satu operasi atomik, dan
+        // otomatis retry kalau dokumennya berubah di tengah jalan.
+        if (firestoreSiap) {
+            try {
+                await db.cashIncome.mergeSingleDay(bulanKey, dayRecord);
+                _cashAllCacheTime = 0; // invalidate cache biar tampilan sinkron dengan server
+            } catch(e) {
+                showToast('⚠️ Gagal sinkron data harian ke server: '+(e&&e.message?e.message:e), 'warning');
+            }
+        } else {
+            let list; try { const rec=await db.cashIncome.where('bulan').equals(bulanKey).first(); list=rec?(rec.data||[]):[]; } catch(e){ list=cashDataMap[bulanKey]||[]; }
+            const existingIdx=list.findIndex(it=>it.tanggal===tanggalKey); if(existingIdx>=0) list[existingIdx]=dayRecord; else list.push(dayRecord);
+            const existing=await db.cashIncome.where('bulan').equals(bulanKey).first();
+            if(existing){ await db.cashIncome.update(existing.id,{data:list,tanggal:new Date().toISOString()}); } else { await db.cashIncome.add({bulan:bulanKey,data:list,tanggal:new Date().toISOString()}); }
+            cashDataMap[bulanKey]=list;
+        }
         if(bulanKey===cashBulan){ await loadCashData(); renderPemasukan(); }
         const tab3Aktif=document.getElementById('tab3').classList.contains('active'); const tab4Aktif=document.getElementById('tab4').classList.contains('active');
         if(tab3Aktif) renderCek(); if(tab4Aktif) await ptRefresh(false);
