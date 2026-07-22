@@ -3966,8 +3966,8 @@
             <div class="tab1-split-right">
                 <div class="table-wrap" style="height: 485px; max-height: 485px;" id="tab1TableWrap">
                     <table>
-                        <thead><tr><th style="width:26px;"><input type="checkbox" id="salesSelectAll" title="Pilih semua baris yang tampil"></th><th>Tanggal</th><th>No.Faktur</th><th>Produk</th><th class="num">Jumlah</th><th>Satuan</th><th class="num">Harga Jual</th><th class="num">Harga Beli</th><th class="num">Disc</th><th class="num">Total</th><th>Sales</th><th>Customer</th><th>Alamat</th><th>Pembayaran</th></tr></thead>
-                        <tbody id="salesTableBody"><tr><td colspan="14" class="empty-msg">📂 Tidak ada data. Import Excel atau Tambah transaksi.</td></tr></tbody>
+                        <thead><tr><th style="width:26px;"><input type="checkbox" id="salesSelectAll" title="Pilih semua baris yang tampil"></th><th>Tanggal</th><th>No.Faktur</th><th>Produk</th><th class="num">Jumlah</th><th>Satuan</th><th class="num">Harga Jual</th><th class="num">Disc</th><th class="num">Total</th><th>Sales</th><th>Customer</th><th>Alamat</th><th>Pembayaran</th></tr></thead>
+                        <tbody id="salesTableBody"><tr><td colspan="13" class="empty-msg">📂 Tidak ada data. Import Excel atau Tambah transaksi.</td></tr></tbody>
                     </table>
                 </div>
                 <div class="sales-card-list" id="salesCardList" style="height:485px;"></div>
@@ -6514,6 +6514,9 @@
                             penjualanTransfer, piutangDetail, cashDroppingDetail });
                     });
                     if (results.length === 0) { showToast('Tidak ada data ditemukan.', 'warning'); return; }
+                    // Muat ulang dari server dulu supaya tidak menimpa perubahan dari
+                    // halaman/perangkat lain yang belum tercermin di memori browser ini.
+                    await loadCashData();
                     const current = getCashData();
                     if (current.length > 0) {
                         if (!confirm('Data saat ini ' + current.length + ' hari. Tambahkan ' + results.length +
@@ -6569,6 +6572,7 @@
                 try {
                     const json = JSON.parse(e.target.result);
                     if (!Array.isArray(json) || json.length === 0) { showToast('File tidak valid.', 'warning'); return; }
+                    await loadCashData();
                     const current = getCashData();
                     if (current.length > 0) {
                         if (!confirm('Ganti ' + current.length + ' data dengan ' + json.length + ' dari file?'))
@@ -7556,16 +7560,14 @@
                 rows.filter(r => normFaktur(r['No.Faktur']) === normFaktur(tab1SelectedFaktur)) : rows;
             if (displayRows.length === 0) {
                 tbody.innerHTML = tab1SelectedFaktur ?
-                    '<tr><td colspan="14" class="empty-msg">📂 Faktur ini tidak ada di data yang tampil saat ini.</td></tr>' :
-                    '<tr><td colspan="14" class="empty-msg">📂 Tidak ada data. Import Excel atau Tambah transaksi.</td></tr>';
+                    '<tr><td colspan="13" class="empty-msg">📂 Faktur ini tidak ada di data yang tampil saat ini.</td></tr>' :
+                    '<tr><td colspan="13" class="empty-msg">📂 Tidak ada data. Import Excel atau Tambah transaksi.</td></tr>';
             } else {
                 const salesIndexMap = new Map();
                 salesData.forEach((r, i) => salesIndexMap.set(r, i));
                 tbody.innerHTML = displayRows.map(r => {
                     const jumlah = parseNumber(r.Jumlah);
                     const harga = parseNumber(r['Harga Jual']);
-                    const hargaBeli = r['Harga Beli'] !== undefined && r['Harga Beli'] !== '' && r[
-                        'Harga Beli'] !== null ? parseNumber(r['Harga Beli']) : null;
                     const disc = parseNumber(r.Disc);
                     const total = (jumlah * harga) - disc;
                     r.Total = total;
@@ -7577,7 +7579,7 @@
                         'color:#b45309;font-weight:700;text-decoration:underline;' :
                         'color:#1f4e78;font-weight:700;text-decoration:underline;';
                     const fakturLinkTitle = sudahDiedit ? ' title="Faktur ini pernah diedit dari modal detail"' : '';
-                    return `<tr><td><input type="checkbox" class="sales-trash-checkbox" data-gidx="${gidx}" ${cbChecked}></td><td>${fmtTanggal(r.Tanggal)}</td><td>${noFakturSafe ? `<a href="#" class="tab1-faktur-link" data-faktur="${noFakturSafe}" style="${fakturLinkStyle}"${fakturLinkTitle}>${sudahDiedit ? '✏️ ' : ''}${noFakturSafe}</a>` : ''}</td><td>${r.Produk || ''}</td><td class="num">${jumlah}</td><td>${r.Satuan || ''}</td><td class="num">${fmtRp(harga)}</td><td class="num">${hargaBeli !== null ? fmtRp(hargaBeli) : '-'}</td><td class="num">${fmtRp(disc)}</td><td class="num">${fmtRp(total)}</td><td>${r.Sales || ''}</td><td>${r.Customer || ''}</td><td>${r.Alamat || ''}</td><td><span class="badge ${r.Pembayaran === 'Cash' ? 'cash' : 'tempo'}">${r.Pembayaran || 'Tempo'}</span></td></tr>`;
+                    return `<tr><td><input type="checkbox" class="sales-trash-checkbox" data-gidx="${gidx}" ${cbChecked}></td><td>${fmtTanggal(r.Tanggal)}</td><td>${noFakturSafe ? `<a href="#" class="tab1-faktur-link" data-faktur="${noFakturSafe}" style="${fakturLinkStyle}"${fakturLinkTitle}>${sudahDiedit ? '✏️ ' : ''}${noFakturSafe}</a>` : ''}</td><td>${r.Produk || ''}</td><td class="num">${jumlah}</td><td>${r.Satuan || ''}</td><td class="num">${fmtRp(harga)}</td><td class="num">${fmtRp(disc)}</td><td class="num">${fmtRp(total)}</td><td>${r.Sales || ''}</td><td>${r.Customer || ''}</td><td>${r.Alamat || ''}</td><td><span class="badge ${r.Pembayaran === 'Cash' ? 'cash' : 'tempo'}">${r.Pembayaran || 'Tempo'}</span></td></tr>`;
                 }).join('');
                 renderSalesCards(displayRows, salesIndexMap, statusMapForChips);
             }
@@ -10664,13 +10666,16 @@
             const dayRecord = { tanggal: tanggalKey, piutangCash, piutangTransfer, penjualanCash, penjualanTransfer,
                 totalCash, totalTransfer, grandTotal, piutangDetail, cashDroppingDetail };
 
-            let list = cashDataMap[bulanKey];
-            if (!list) {
-                try {
-                    const rec = await db.cashIncome.where('bulan').equals(bulanKey).first();
-                    list = rec ? (rec.data || []) : [];
-                } catch (e) { list = []; }
-            }
+            // PENTING: SELALU ambil data TERBARU dari server di sini (bukan dari
+            // cashDataMap di memori, yang bisa basi kalau ada perubahan dari
+            // halaman/tab lain sejak terakhir dimuat). Auto-save ini jalan tiap
+            // 1.5 detik & saat pindah tanggal/dashboard, jadi kalau pakai cache
+            // basi, data hari lain yang baru diupload di tempat lain bisa tertimpa hilang.
+            let list;
+            try {
+                const rec = await db.cashIncome.where('bulan').equals(bulanKey).first();
+                list = rec ? (rec.data || []) : [];
+            } catch (e) { list = cashDataMap[bulanKey] || []; }
             const existingIdx = list.findIndex(it => normDDMM(it.tanggal) === normDDMM(tanggalKey));
             if (existingIdx >= 0) list[existingIdx] = dayRecord; else list.push(dayRecord);
             cashDataMap[bulanKey] = list;

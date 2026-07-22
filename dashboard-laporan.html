@@ -1497,6 +1497,9 @@
                     results.push({tanggal,piutangCash,piutangTransfer,penjualanCash,penjualanTransfer,totalCash:piutangCash+penjualanCash,totalTransfer:piutangTransfer+penjualanTransfer,grandTotal:piutangCash+piutangTransfer+penjualanCash+penjualanTransfer,piutangDetail,cashDroppingDetail});
                 });
                 if(results.length===0){ showToast('Tidak ada data ditemukan.','warning'); return; }
+                // Muat ulang dari server dulu supaya tidak menimpa perubahan dari
+                // halaman/perangkat lain yang belum tercermin di memori browser ini.
+                await loadCashData();
                 const current=getCashData();
                 if(current.length>0){
                     const gabungkan=confirm('Data saat ini '+current.length+' hari. Gabungkan dengan '+results.length+' hari dari file ini?\n\n(Klik Cancel untuk BATAL upload — data lama tidak akan diubah sama sekali.)');
@@ -1533,6 +1536,7 @@
             try {
                 const json=JSON.parse(e.target.result);
                 if(!Array.isArray(json)||json.length===0){ showToast('File tidak valid.','warning'); return; }
+                await loadCashData();
                 const current=getCashData();
                 if(current.length>0 && !confirm('Ganti '+current.length+' data dengan '+json.length+' dari file?')) return;
                 cashDataMap[cashBulan]=json;
@@ -2303,7 +2307,12 @@
         const penjualanCash=sum(cashDroppingDetail,'bayarCash'); const penjualanTransfer=sum(cashDroppingDetail,'bayarTransfer');
         const totalCash=piutangCash+penjualanCash; const totalTransfer=piutangTransfer+penjualanTransfer; const grandTotal=totalCash+totalTransfer;
         const dayRecord={tanggal:tanggalKey,piutangCash,piutangTransfer,penjualanCash,penjualanTransfer,totalCash,totalTransfer,grandTotal,piutangDetail,cashDroppingDetail};
-        let list=cashDataMap[bulanKey]; if(!list){ try { const rec=await db.cashIncome.where('bulan').equals(bulanKey).first(); list=rec?(rec.data||[]):[]; } catch(e){ list=[]; } }
+        // PENTING: SELALU ambil data TERBARU dari server di sini (bukan dari
+        // cashDataMap di memori, yang bisa basi kalau ada perubahan dari
+        // halaman/tab lain sejak terakhir dimuat). Auto-save ini jalan tiap
+        // 1.5 detik & saat pindah tanggal/dashboard, jadi kalau pakai cache
+        // basi, data hari lain yang baru diupload di tempat lain bisa tertimpa hilang.
+        let list; try { const rec=await db.cashIncome.where('bulan').equals(bulanKey).first(); list=rec?(rec.data||[]):[]; } catch(e){ list=cashDataMap[bulanKey]||[]; }
         const existingIdx=list.findIndex(it=>it.tanggal===tanggalKey); if(existingIdx>=0) list[existingIdx]=dayRecord; else list.push(dayRecord); cashDataMap[bulanKey]=list;
         const existing=await db.cashIncome.where('bulan').equals(bulanKey).first(); if(existing){ await db.cashIncome.update(existing.id,{data:list,tanggal:new Date().toISOString()}); } else { await db.cashIncome.add({bulan:bulanKey,data:list,tanggal:new Date().toISOString()}); }
         if(bulanKey===cashBulan){ await loadCashData(); renderPemasukan(); }
