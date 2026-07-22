@@ -1379,13 +1379,19 @@
     }
     async function loadCashData() {
         try {
-            await beresinDuplikatCashIncome();
+            const hasilBeres=await beresinDuplikatCashIncome();
+            if (hasilBeres && hasilBeres.length) { showToast('🔧 Ditemukan & digabungkan dokumen ganda di server untuk: '+hasilBeres.join(', ')+'.', 'info'); }
             const allRecords = await db.cashIncome.toArray();
             allRecords.forEach(record => { if (record.bulan && Array.isArray(record.data)) { cashDataMap[record.bulan] = record.data; } });
             const currentRecord = await db.cashIncome.where('bulan').equals(cashBulan).first();
             if (currentRecord) { cashDataMap[cashBulan] = currentRecord.data || []; }
             else { if (!cashDataMap[cashBulan]) cashDataMap[cashBulan] = []; }
-        } catch(e) { console.warn('Error loading cash data:', e); if (!cashDataMap[cashBulan]) cashDataMap[cashBulan] = []; }
+            console.info('[GAMAS] loadCashData OK — bulan='+cashBulan+', hari='+ (cashDataMap[cashBulan]||[]).length +', totalDokumen='+allRecords.length);
+        } catch(e) {
+            console.error('[GAMAS] Error loading cash data:', e);
+            showToast('⚠️ Gagal memuat data dari server: '+(e&&e.message?e.message:e)+'. Data yang tampil BELUM TENTU lengkap — jangan hapus/timpa dulu, screenshot pesan ini dan laporkan.', 'warning');
+            if (!cashDataMap[cashBulan]) cashDataMap[cashBulan] = [];
+        }
         return cashDataMap[cashBulan];
     }
     // Menggabungkan dokumen cashIncome yang ke-duplikat untuk bulan yang sama (bisa terjadi
@@ -1393,10 +1399,12 @@
     // digabung (union berdasarkan 'tanggal' harian), lalu disimpan ke SATU dokumen (yang paling
     // baru) dan dokumen duplikat lain dihapus, supaya pembacaan data selanjutnya tidak lagi
     // berisiko mengambil dokumen lama yang datanya belum lengkap.
+    // Mengembalikan array nama bulan yang barusan dibereskan (untuk ditampilkan ke user), atau [].
     let _beresinDuplikatSudahJalan = false;
     async function beresinDuplikatCashIncome() {
-        if (_beresinDuplikatSudahJalan) return;
+        if (_beresinDuplikatSudahJalan) return [];
         _beresinDuplikatSudahJalan = true;
+        const dibereskan=[];
         try {
             const allRecords = await db.cashIncome.toArray();
             const grup = {};
@@ -1413,16 +1421,43 @@
                 const docTerbaru = docs[docs.length-1];
                 await db.cashIncome.update(docTerbaru.id, { data: dataGabungan, tanggal: new Date().toISOString() });
                 for (const doc of docs) { if (doc.id !== docTerbaru.id) { await db.cashIncome.delete(doc.id); } }
-                console.warn('🔧 Digabungkan '+docs.length+' dokumen duplikat cashIncome untuk bulan '+bulanKey+' menjadi 1 ('+dataGabungan.length+' hari).');
+                console.warn('🔧 [GAMAS] Digabungkan '+docs.length+' dokumen duplikat cashIncome untuk bulan '+bulanKey+' menjadi 1 ('+dataGabungan.length+' hari).');
+                dibereskan.push(bulanKey+' ('+docs.length+' dok → '+dataGabungan.length+' hari)');
             }
         } catch(e) { console.warn('Gagal membereskan duplikat cashIncome:', e); }
+        return dibereskan;
     }
     async function saveCashData() {
         try {
             const data = cashDataMap[cashBulan] || [];
             const existing = await db.cashIncome.where('bulan').equals(cashBulan).first();
-            if (existing) { await db.cashIncome.update(existing.id, { data, tanggal: new Date().toISOString() }); }
-            else { await db.cashIncome.add({ bulan:cashBulan, data, tanggal:new Date().toISOString() }); }
+            let idTersimpan;
+            if (existing) { await db.cashIncome.update(existing.id, { data, tanggal: new Date().toISOString() }); idTersimpan=existing.id; }
+            else { idTersimpan = await db.cashIncome.add({ bulan:cashBulan, data, tanggal:new Date().toISOString() }); }
+            // PENTING: Firestore dengan enablePersistence() akan menganggap penulisan "sukses"
+            // begitu tersimpan di CACHE LOKAL perangkat — belum tentu sudah benar-benar sampai
+            // ke server (misal koneksi ke Firestore sedang terganggu/diblokir, sering terjadi di
+            // mode Incognito/browser privasi). Kalau cache lokal itu nanti dibersihkan/hilang,
+            // data yang tadinya "berhasil" bisa hilang permanen. Maka di sini kita paksa baca
+            // ULANG langsung dari server (bukan cache) untuk memastikan datanya benar-benar
+            // sudah nyampe, sebelum bilang "berhasil" ke user.
+            if (firestoreSiap && idTersimpan) {
+                try {
+                    const snap = await fsdb.collection('cashIncome').doc(String(idTersimpan)).get({ source: 'server' });
+                    if (!snap.exists) {
+                        showToast('⚠️ Data tersimpan di PERANGKAT ini saja, BELUM terkonfirmasi sampai ke server (kemungkinan koneksi ke server bermasalah). Jangan tutup halaman ini dulu — cek koneksi internet, lalu coba Upload ulang.', 'warning');
+                        return false;
+                    }
+                    const dataServer = (snap.data()||{}).data || [];
+                    if (dataServer.length !== data.length) {
+                        showToast('⚠️ Data di server baru '+dataServer.length+' dari '+data.length+' hari — sepertinya koneksi terputus saat menyimpan. Pastikan internet stabil lalu Upload ulang.', 'warning');
+                        return false;
+                    }
+                } catch(verErr) {
+                    showToast('⚠️ Tidak bisa memastikan data sudah sampai ke server ('+(verErr&&verErr.message?verErr.message:verErr)+'). Data BISA JADI baru tersimpan lokal saja — pastikan internet stabil, jangan tutup halaman, lalu cek lagi.', 'warning');
+                    return false;
+                }
+            }
             return true;
         } catch(e) {
             showToast('❌ GAGAL simpan ke server: '+e.message+' — data baru BELUM tersimpan permanen, jangan pindah tab/dashboard dulu, coba Upload ulang.', 'warning');
