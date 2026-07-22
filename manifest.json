@@ -1,7 +1,7 @@
 {
-  "name": "GAJAH MAS 2026 - All in One",
-  "short_name": "Gajah Mas",
-  "description": "Dashboard All in One - GAJAH MAS 2026",
+  "name": "GAMAS 2026 - All in One",
+  "short_name": "GAMAS",
+  "description": "Dashboard All in One - GAMAS 2026",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

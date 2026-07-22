@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="id"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>GAJAH MAS 2026 - Dashboard Laporan</title>
+    <title>GAMAS 2026 - Dashboard Laporan</title>
+    <meta name="robots" content="noindex, nofollow">
     <script>
         if (window.matchMedia('(display-mode: standalone)').matches || 
             window.matchMedia('(display-mode: fullscreen)').matches) {
@@ -232,7 +233,7 @@
     </div>
     <header class="app-header">
         <div class="logo">
-            <h1>📊 GAJAH MAS 2026</h1>
+            <h1>📊 GAMAS 2026</h1>
             <span class="sub">Laporan</span>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
@@ -1921,23 +1922,6 @@
     function ptParseDMY(str){ if(!str) return null; const m=String(str).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); if(!m) return null; return new Date(parseInt(m[3]),parseInt(m[2])-1,parseInt(m[1])); }
     function ptDaysBetween(a,b){ return Math.round((a-b)/(1000*60*60*24)); }
     function ptIsFitri(produk){ return (produk||'').toLowerCase().includes('fitri'); }
-    // Ambil daftar Produk & Kategori ASLI per No.Faktur dari Bank Data Penjualan (salesData),
-    // sama seperti sumber data yang dipakai tab "Cek Piutang" / dashboard-kerja — supaya tab
-    // "Piutang Tempo" (dari Data Uang Masuk) tidak lagi menebak kategori dari kata kunci di
-    // Keterangan/Nama Toko, melainkan memakai Produk & Kategori yang sebenarnya tercatat.
-    function buildFakturProdukMapDariSales(){
-        const map={};
-        salesData.forEach(r=>{
-            const key=normFaktur(r['No.Faktur']);
-            if(!key) return;
-            const produk=String(r.Produk||'').trim();
-            if(!produk) return;
-            if(!map[key]) map[key]={produkList:[],isFitri:false};
-            if(!map[key].produkList.includes(produk)) map[key].produkList.push(produk);
-            if(ptIsFitri(produk)) map[key].isFitri=true;
-        });
-        return map;
-    }
     function ptFlattenPiutang() {
         const flat=[]; Object.keys(ptIncomeByMonth).sort().forEach(bulan=>{ (ptIncomeByMonth[bulan]||[]).forEach(day=>{ (day.piutangDetail||[]).forEach(d=>{ flat.push({...d,_bulan:bulan,_tanggalHari:day.tanggal}); }); }); }); return flat;
     }
@@ -2402,7 +2386,7 @@
                 db.piutangNotes.toArray(), db.cashNotes.toArray(), db.cetakTagihanMap.toArray()
             ]);
             const inputHarian={}; getAllInputHarianKeys().forEach(function(key){ try{ inputHarian[key]=JSON.parse(localStorage.getItem(key)); } catch(e){} });
-            const backup={ app:'GAJAH MAS 2026 - All in One', backupVersion:2, exportedAt:new Date().toISOString(), data:{ sales, cashIncome, printHistory, inputHarian, trash, piutangNotes, cashNotes, cetakTagihan } };
+            const backup={ app:'GAMAS 2026 - All in One', backupVersion:2, exportedAt:new Date().toISOString(), data:{ sales, cashIncome, printHistory, inputHarian, trash, piutangNotes, cashNotes, cetakTagihan } };
             const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
             const url=URL.createObjectURL(blob); const stamp=new Date().toISOString().slice(0,19).replace(/[:T]/g,'-'); const a=document.createElement('a'); a.href=url; a.download='GAJAH_MAS_2026_BACKUP_'+stamp+'.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
             const now=new Date().toLocaleString('id-ID'); localStorage.setItem('gmLastBackupAt', now);
@@ -2471,36 +2455,41 @@
     function loadPiutangUangMasukFromCashData() {
         piutangUangMasukData=[]; cashDroppingUangMasukData=[];
         const todayPtUM=new Date(); todayPtUM.setHours(0,0,0,0);
-        const fakturProdukMap=buildFakturProdukMapDariSales();
+
+        // Bangun lookup Produk & Kategori dari Bank Data Penjualan (salesData),
+        // dikelompokkan per No.Faktur (satu faktur bisa berisi banyak baris produk).
+        const salesByFaktur=new Map();
+        salesData.forEach(r => {
+            const key=normFaktur(r['No.Faktur']);
+            if(!key) return;
+            if(!salesByFaktur.has(key)) salesByFaktur.set(key,{produkSet:new Set(), hasFitri:false});
+            const entry=salesByFaktur.get(key);
+            const produkNama=(r.Produk||'').trim();
+            if(produkNama) entry.produkSet.add(produkNama);
+            if(produkNama.toLowerCase().includes('fitri')) entry.hasFitri=true;
+        });
+
         for(const bulan in cashDataMap){
             const days=cashDataMap[bulan]||[];
             days.forEach(day => {
                 (day.piutangDetail||[]).forEach(d => {
-                    // Produk & Kategori diambil dari Bank Data Penjualan (data asli di dashboard-kerja),
-                    // dicocokkan lewat No.Faktur. Kalau fakturnya tidak ketemu di Bank Data Penjualan
-                    // (mis. input piutang lama secara manual), baru pakai tebakan dari Keterangan/Nama Toko.
-                    const fp=fakturProdukMap[normFaktur(d.noFaktur)];
-                    const produkAsli=fp&&fp.produkList.length?fp.produkList.join(', '):'';
-                    const isFitriFallback=(d.ket||'').toLowerCase().includes('minyak')||(d.namaToko||'').toLowerCase().includes('fitri');
-                    const isFitri=fp?fp.isFitri:isFitriFallback;
-                    const produk=produkAsli||d.produk||(isFitri?'Minyak Fitri':'Rupa-Rupa');
+                    const salesMatch=salesByFaktur.get(normFaktur(d.noFaktur));
+                    const isFitri=salesMatch?salesMatch.hasFitri:((d.ket||'').toLowerCase().includes('minyak')||(d.namaToko||'').toLowerCase().includes('fitri'));
+                    const produkGabungan=salesMatch&&salesMatch.produkSet.size>0?Array.from(salesMatch.produkSet).join(', '):(d.produk||(isFitri?'Minyak Fitri':'Rupa-Rupa'));
                     const tagihan=d.tagihan||0;
                     const totalBayar=d.totalBayar!=null?d.totalBayar:((d.bayarCash||0)+(d.bayarTransfer||0));
                     const sisaTagihan=Math.max(0,tagihan-totalBayar);
                     let statusClass=sisaTagihan<=0.5?'lunas':'belum';
                     let overdueDays=null;
                     if(statusClass!=='lunas' && d.jt){ const jtDate=ptParseDMY(d.jt); if(jtDate && jtDate<todayPtUM){ statusClass='overdue'; overdueDays=ptDaysBetween(todayPtUM,jtDate); } }
-                    // Tgl Bayar: tanggal baris "Data Uang Masuk" ini dicatat — tampil untuk setiap
-                    // pembayaran (cicilan/titip maupun lunas), bukan cuma saat statusnya sudah Lunas.
                     let tglBayar='';
-                    if(totalBayar>0.5 && day.tanggal){ const dayPart=String(day.tanggal).split('-')[0]; const [tahun,bulanNum]=bulan.split('-'); if(dayPart) tglBayar=`${dayPart.padStart(2,'0')}/${bulanNum}/${tahun}`; }
-                    piutangUangMasukData.push({...d,tglFaktur:d.tglFaktur||day.tanggal,kategori:isFitri?'fitri':'rupa',produk,jatuhTempo:d.jt||'-',totalBayar,sisaTagihan,statusClass,overdueDays,tglBayar,_bulan:bulan,_tanggalHari:day.tanggal});
+                    if(statusClass==='lunas' && day.tanggal){ const dayPart=String(day.tanggal).split('-')[0]; const [tahun,bulanNum]=bulan.split('-'); if(dayPart) tglBayar=`${dayPart.padStart(2,'0')}/${bulanNum}/${tahun}`; }
+                    piutangUangMasukData.push({...d,tglFaktur:d.tglFaktur||day.tanggal,kategori:isFitri?'fitri':'rupa',produk:produkGabungan,jatuhTempo:d.jt||'-',totalBayar,sisaTagihan,statusClass,overdueDays,tglBayar,_bulan:bulan,_tanggalHari:day.tanggal});
                 });
                 (day.cashDroppingDetail||[]).forEach(d => {
-                    const fp=fakturProdukMap[normFaktur(d.noFaktur)];
-                    const isFitriFallback=(d.ket||'').toLowerCase().includes('minyak')||(d.namaToko||'').toLowerCase().includes('fitri');
-                    const isFitri=fp?fp.isFitri:isFitriFallback;
-                    cashDroppingUangMasukData.push({...d,tglFaktur:d.tglFaktur||day.tanggal,kategori:isFitri?'fitri':'rupa',produk:(fp&&fp.produkList.length?fp.produkList.join(', '):d.produk)||'',_bulan:bulan,_tanggalHari:day.tanggal});
+                    const salesMatch=salesByFaktur.get(normFaktur(d.noFaktur));
+                    const isFitri=salesMatch?salesMatch.hasFitri:((d.ket||'').toLowerCase().includes('minyak')||(d.namaToko||'').toLowerCase().includes('fitri'));
+                    cashDroppingUangMasukData.push({...d,tglFaktur:d.tglFaktur||day.tanggal,kategori:isFitri?'fitri':'rupa',_bulan:bulan,_tanggalHari:day.tanggal});
                 });
             });
         }
@@ -2756,7 +2745,7 @@
             document.querySelector('.tab-btn[data-tab="tab10"]').style.display='inline-flex';
             switchTab('tab2');
             scheduleFitTableWraps();
-            console.log('✅ GAJAH MAS 2026 FINAL — Semua tab berfungsi.');
+            console.log('✅ GAMAS 2026 FINAL — Semua tab berfungsi.');
         } catch(err){ console.error('Gagal inisialisasi database/aplikasi:',err); showToast('❌ Gagal membuka database: '+err.message+' — lihat peringatan di atas.','warning'); const bar=document.getElementById('storageStatusBar'); if(bar&&location.protocol!=='file:'){ bar.style.display='block'; bar.style.background='#fee2e2'; bar.style.color='#991b1b'; bar.style.borderBottom='2px solid #dc2626'; bar.innerHTML='🚫 Database gagal dibuka ('+err.message+'). Coba muat ulang halaman; jika terus terjadi, buka lewat http:// bukan file://.'; } }
     }
 
@@ -2769,7 +2758,7 @@
     startApp();
 
     // Logout
-    async function handleLogoutClick(){ if(!confirm('Yakin mau logout dari GAJAH MAS 2026?')) return; try { await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'}); } catch(e){} location.reload(); }
+    async function handleLogoutClick(){ if(!confirm('Yakin mau logout dari GAMAS 2026?')) return; try { await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'}); } catch(e){} location.reload(); }
     document.getElementById('btnLogoutHeader').addEventListener('click', handleLogoutClick);
     const btnLogoutFloatEl=document.getElementById('btnLogoutFloat'); if(btnLogoutFloatEl) btnLogoutFloatEl.addEventListener('click', handleLogoutClick);
 

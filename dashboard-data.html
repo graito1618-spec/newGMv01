@@ -2,7 +2,8 @@
 <html lang="id"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>GAJAH MAS 2026 - Dashboard Data</title>
+    <title>GAMAS 2026 - Dashboard Data</title>
+    <meta name="robots" content="noindex, nofollow">
     <script>
         // Cek mode PWA dan hide header SEBELUM render
         if (window.matchMedia('(display-mode: standalone)').matches || 
@@ -1137,53 +1138,6 @@
         .toast.info {
             background: #2d3748;
         }
-        .persistent-alert-wrap {
-            position: fixed;
-            top: 60px;
-            right: 20px;
-            left: 20px;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 8px;
-            pointer-events: none;
-        }
-        .persistent-alert {
-            pointer-events: auto;
-            background: #b91c1c;
-            color: #fff;
-            border-radius: var(--radius);
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
-            padding: 10px 14px;
-            max-width: 420px;
-            width: 100%;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            font-size: 11px;
-            line-height: 1.4;
-            animation: persistentAlertIn 0.2s ease;
-        }
-        @keyframes persistentAlertIn {
-            from { opacity: 0; transform: translateY(-8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .persistent-alert .pa-icon { font-size: 16px; line-height: 1; }
-        .persistent-alert .pa-msg { flex: 1; white-space: pre-line; }
-        .persistent-alert .pa-close {
-            background: rgba(255,255,255,0.15);
-            border: none;
-            color: #fff;
-            border-radius: 4px;
-            width: 20px;
-            height: 20px;
-            flex-shrink: 0;
-            cursor: pointer;
-            font-size: 12px;
-            line-height: 1;
-        }
-        .persistent-alert .pa-close:hover { background: rgba(255,255,255,0.3); }
         .stempel-lunas {
             display: inline-block;
             position: relative;
@@ -3143,7 +3097,7 @@
     </div>
     <header class="app-header">
         <div class="logo">
-            <h1>📊 GAJAH MAS 2026</h1>
+            <h1>📊 GAMAS 2026</h1>
             <span class="sub">Data</span>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
@@ -4626,8 +4580,8 @@
         </div>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>No.Faktur</th><th>Tgl Faktur</th><th>Sumber Uang</th><th>Tgl Uang Masuk</th><th>Produk</th><th>Sales</th><th class="num">Qty</th><th class="num">Uang Diterima</th><th class="num">Profit</th></tr></thead>
-                <tbody id="rpTableBody"><tr><td colspan="9" class="empty-msg">📂 Belum ada data. Pastikan Bank Data Penjualan &amp; Data Uang Masuk sudah diisi.</td></tr></tbody>
+                <thead><tr><th>No.Faktur</th><th>Tgl Faktur</th><th>Sumber Uang</th><th>Tgl Uang Masuk</th><th>Produk</th><th>Sales</th><th class="num">Qty</th><th class="num">Profit</th></tr></thead>
+                <tbody id="rpTableBody"><tr><td colspan="8" class="empty-msg">📂 Belum ada data. Pastikan Bank Data Penjualan &amp; Data Uang Masuk sudah diisi.</td></tr></tbody>
             </table>
         </div>
         <div class="pagination">
@@ -4698,7 +4652,6 @@
     </div>
 
     <div class="toast success" id="toastGlobal">🔄 Data dimuat.</div>
-    <div class="persistent-alert-wrap" id="persistentAlertWrap"></div>
 
     <script>
         // ================================================================
@@ -4771,22 +4724,6 @@
             t.classList.add('show');
             clearTimeout(t._hideTimer);
             t._hideTimer = setTimeout(() => t.classList.remove('show'), 2800);
-        }
-
-        // Peringatan PERSISTEN (tidak hilang otomatis) untuk kegagalan
-        // menyimpan ke server/DB, supaya user tidak mengira data sudah
-        // tersimpan padahal sebenarnya gagal (toast biasa terlalu sekilas).
-        function showPersistentAlert(msg, icon) {
-            const wrap = document.getElementById('persistentAlertWrap');
-            if (!wrap) { alert(msg); return null; }
-            const el = document.createElement('div');
-            el.className = 'persistent-alert';
-            el.innerHTML = '<span class="pa-icon">' + (icon || '⚠️') +
-                '</span><span class="pa-msg"></span><button type="button" class="pa-close" title="Tutup">✕</button>';
-            el.querySelector('.pa-msg').textContent = msg;
-            el.querySelector('.pa-close').addEventListener('click', () => el.remove());
-            wrap.appendChild(el);
-            return el;
         }
 
         // ================================================================
@@ -5722,52 +5659,19 @@
             return cashDataMap[cashBulan];
         }
 
-        // Mengembalikan { success: true } jika data BENAR-BENAR tersimpan ke
-        // IndexedDB (db.cashIncome), atau { success: false, error } jika gagal.
-        // Pemanggil WAJIB mengecek hasil ini sebelum menampilkan pesan "Berhasil"
-        // ke user, supaya toast sukses tidak muncul padahal data tidak tersimpan.
         async function saveCashData() {
-            const data = cashDataMap[cashBulan] || [];
-            let saved = false;
-            let saveError = null;
             try {
+                const data = cashDataMap[cashBulan] || [];
                 const existing = await db.cashIncome.where('bulan').equals(cashBulan).first();
-                if (existing) {
-                    await db.cashIncome.update(existing.id, { data, tanggal: new Date().toISOString() });
-                } else {
+                if (existing) { await db.cashIncome.update(existing.id, { data, tanggal: new Date().toISOString() }); } else {
                     await db.cashIncome.add({ bulan: cashBulan, data, tanggal: new Date().toISOString() });
                 }
-                saved = true;
+                await autoBackupCashToLocalStorage();
+                return true;
             } catch (e) {
-                saveError = e;
-                console.error('Gagal simpan cash ke DB:', e);
+                showToast('❌ GAGAL simpan ke server: ' + e.message + ' — data baru BELUM tersimpan permanen, jangan pindah tab/bulan dulu, coba Upload ulang.', 'warning');
+                return false;
             }
-
-            // Verifikasi tambahan: pastikan data yang barusan disimpan memang
-            // benar-benar terbaca kembali dari DB (bukan cuma "tidak error").
-            if (saved) {
-                try {
-                    const check = await db.cashIncome.where('bulan').equals(cashBulan).first();
-                    const savedCount = check && Array.isArray(check.data) ? check.data.length : -1;
-                    if (savedCount !== data.length) {
-                        saved = false;
-                        saveError = new Error('Verifikasi gagal: tersimpan ' + savedCount + ' dari ' + data.length + ' data.');
-                    }
-                } catch (e) {
-                    saved = false;
-                    saveError = e;
-                    console.error('Gagal verifikasi cash setelah simpan:', e);
-                }
-            }
-
-            // Backup ke localStorage bersifat pelengkap saja, tidak menentukan
-            // sukses/gagalnya penyimpanan utama ke DB.
-            try { await autoBackupCashToLocalStorage(); } catch (e) { console.warn('Auto-backup gagal:', e); }
-
-            if (!saved) {
-                return { success: false, error: saveError };
-            }
-            return { success: true };
         }
 
         function getCashData() {
@@ -5914,35 +5818,30 @@
                     if (results.length === 0) { showToast('Tidak ada data ditemukan.', 'warning'); return; }
                     const current = getCashData();
                     if (current.length > 0) {
-                        if (!confirm('Data saat ini ' + current.length + ' hari. Tambahkan ' + results.length +
-                            ' hari baru?')) {
-                            cashDataMap[cashBulan] = results;
-                        } else {
-                            const existing = new Set(current.map(d => d.tanggal));
-                            results.forEach(newItem => {
-                                if (!existing.has(newItem.tanggal)) current.push(newItem);
-                                else {
-                                    const idx = current.findIndex(d => d.tanggal === newItem.tanggal);
-                                    if (idx !== -1) current[idx] = newItem;
-                                }
-                            });
-                            cashDataMap[cashBulan] = current;
+                        const gabungkan = confirm('Data saat ini ' + current.length + ' hari. Gabungkan dengan ' +
+                            results.length + ' hari dari file ini?\n\n(Klik Cancel untuk BATAL upload — data lama tidak akan diubah sama sekali.)');
+                        if (!gabungkan) {
+                            showToast('Upload dibatalkan. Data lama tidak diubah.', 'info');
+                            return;
                         }
+                        const existing = new Set(current.map(d => d.tanggal));
+                        results.forEach(newItem => {
+                            if (!existing.has(newItem.tanggal)) current.push(newItem);
+                            else {
+                                const idx = current.findIndex(d => d.tanggal === newItem.tanggal);
+                                if (idx !== -1) current[idx] = newItem;
+                            }
+                        });
+                        cashDataMap[cashBulan] = current;
                     } else {
                         cashDataMap[cashBulan] = results;
                     }
-                    const saveResult = await saveCashData();
+                    const tersimpan = await saveCashData();
                     renderPemasukan();
                     renderCek();
-                    if (saveResult && saveResult.success) {
+                    if (tersimpan) {
                         tampilkanNotifDataBaru('both');
-                        showToast('Berhasil! Total ' + getCashData().length + ' hari.', 'success');
-                    } else {
-                        const errMsg = (saveResult && saveResult.error && saveResult.error.message) ?
-                            saveResult.error.message : 'Penyebab tidak diketahui.';
-                        showPersistentAlert('❌ GAGAL menyimpan data upload ke server/database!\n' +
-                            'Data di layar mungkin TIDAK tersimpan permanen. Jangan pindah tab dulu, ' +
-                            'coba Upload ulang.\nDetail: ' + errMsg);
+                        showToast('✅ Berhasil tersimpan ke server! Total ' + getCashData().length + ' hari.', 'success');
                     }
                 } catch (err) {
                     showToast('Gagal baca file: ' + err.message, 'warning');
@@ -5981,18 +5880,12 @@
                         return;
                     }
                     cashDataMap[cashBulan] = json;
-                    const saveResult = await saveCashData();
+                    const tersimpan = await saveCashData();
                     renderPemasukan();
                     renderCek();
-                    if (saveResult && saveResult.success) {
+                    if (tersimpan) {
                         tampilkanNotifDataBaru('both');
-                        showToast('Import berhasil! ' + json.length + ' hari.', 'success');
-                    } else {
-                        const errMsg = (saveResult && saveResult.error && saveResult.error.message) ?
-                            saveResult.error.message : 'Penyebab tidak diketahui.';
-                        showPersistentAlert('❌ GAGAL menyimpan hasil import JSON ke server/database!\n' +
-                            'Data di layar mungkin TIDAK tersimpan permanen. Jangan pindah tab dulu, ' +
-                            'coba Import ulang.\nDetail: ' + errMsg);
+                        showToast('✅ Import berhasil tersimpan ke server! ' + json.length + ' hari.', 'success');
                     }
                 } catch (err) { showToast('Gagal import: ' + err.message, 'warning'); }
             };
@@ -6004,17 +5897,10 @@
             if (data.length === 0) { showToast('Tidak ada data untuk dihapus.', 'warning'); return; }
             if (!confirm('Yakin hapus semua data untuk bulan ' + cashBulan + '? (' + data.length + ' hari)')) return;
             cashDataMap[cashBulan] = [];
-            const saveResult = await saveCashData();
+            await saveCashData();
             renderPemasukan();
             renderCek();
-            if (saveResult && saveResult.success) {
-                showToast('Data telah dihapus.', 'info');
-            } else {
-                const errMsg = (saveResult && saveResult.error && saveResult.error.message) ?
-                    saveResult.error.message : 'Penyebab tidak diketahui.';
-                showPersistentAlert('❌ GAGAL menghapus data di server/database!\n' +
-                    'Perubahan mungkin TIDAK tersimpan permanen.\nDetail: ' + errMsg);
-            }
+            showToast('Data telah dihapus.', 'info');
         });
         document.getElementById('bulanPemasukan').addEventListener('change', async function() {
             cashBulan = this.value;
@@ -9923,7 +9809,7 @@
                 });
 
                 const backup = {
-                    app: 'GAJAH MAS 2026 - All in One',
+                    app: 'GAMAS 2026 - All in One',
                     backupVersion: 2,
                     exportedAt: new Date().toISOString(),
                     data: { sales, cashIncome, printHistory, inputHarian, trash, piutangNotes, cashNotes, cetakTagihan, pengeluaran }
@@ -10130,65 +10016,35 @@
         let rpPage = 1;
         const rpRowsPerPage = 10;
 
-        // uangDiterimaMap: Map<noFaktur, totalUangDiterima> yang dibangun SEKALI oleh
-        // rpBangunData() (bukan di-scan ulang tiap panggilan) supaya tidak O(n²).
-        function rpHitungProfitFaktur(noFaktur, uangDiterimaMap) {
+        function rpHitungProfitFaktur(noFaktur) {
             const target = String(noFaktur || '').trim();
-            if (!target) return { qty: 0, profit: 0, produk: [], sales: '', tglFaktur: '', uangDiterima: 0 };
-            let qty = 0;
-            let totalHargaBeli = 0;
+            if (!target) return { qty: 0, profit: 0, produk: [], sales: '', tglFaktur: '' };
+            let qty = 0,
+                profit = 0;
             const produkSet = new Set();
             let sales = '',
                 tglFaktur = '';
-            // 1. Ambil detail dari Bank Data Penjualan (qty & harga beli)
             salesData.forEach(item => {
                 if (String(item['No.Faktur'] || '').trim() !== target) return;
                 const jml = parseNumber(item.Jumlah);
                 qty += jml;
-                const hb = parseNumber(item['Harga Beli']);
-                if (hb) totalHargaBeli += hb * jml;
+                if (item.Profit !== undefined && item.Profit !== '' && item.Profit !== null) {
+                    profit += parseNumber(item.Profit);
+                } else if (item['Harga Beli'] !== undefined && item['Harga Beli'] !== '' && item[
+                        'Harga Beli'] !== null) {
+                    profit += (parseNumber(item['Harga Jual']) - parseNumber(item['Harga Beli'])) * jml;
+                }
                 if (item.Produk) produkSet.add(item.Produk);
                 if (!sales && item.Sales) sales = item.Sales;
                 if (!tglFaktur && item.Tanggal) tglFaktur = item.Tanggal;
             });
-            // 2. Uang yang BENAR-BENAR diterima, dari Data Uang Masuk (Tab 2), diambil
-            // dari peta yang sudah dihitung sekali di rpBangunData().
-            const totalUangDiterima = (uangDiterimaMap && uangDiterimaMap.get(target)) || 0;
-            const profit = totalUangDiterima - totalHargaBeli;
-            return {
-                qty,
-                profit,
-                produk: Array.from(produkSet),
-                sales,
-                tglFaktur,
-                uangDiterima: totalUangDiterima
-            };
+            return { qty, profit, produk: Array.from(produkSet), sales, tglFaktur };
         }
 
         async function rpBangunData() {
             const rows = [];
             let semuaBulan = [];
             try { semuaBulan = await db.cashIncome.toArray(); } catch (e) { semuaBulan = []; }
-
-            // Pass 1: kumpulkan total Uang Diterima per No.Faktur dalam satu kali scan,
-            // supaya rpHitungProfitFaktur tidak perlu men-scan ulang semua data tiap faktur.
-            const uangDiterimaMap = new Map();
-            const tambahUangDiterima = (list) => {
-                (list || []).forEach(det => {
-                    const key = String(det.noFaktur || '').trim();
-                    if (!key) return;
-                    const nilai = (parseNumber(det.minyakCash) || 0) + (parseNumber(det.minyakTransfer) || 0) +
-                        (parseNumber(det.rupaCash) || 0) + (parseNumber(det.rupaTransfer) || 0);
-                    uangDiterimaMap.set(key, (uangDiterimaMap.get(key) || 0) + nilai);
-                });
-            };
-            semuaBulan.forEach(rec => {
-                (rec.data || []).forEach(day => {
-                    tambahUangDiterima(day.piutangDetail);
-                    tambahUangDiterima(day.cashDroppingDetail);
-                });
-            });
-
             semuaBulan.forEach(rec => {
                 const tahun = (rec.bulan || '').slice(0, 4) || String(new Date().getFullYear());
                 const bulanFallback = (rec.bulan || '').slice(5, 7) || '01';
@@ -10200,7 +10056,7 @@
                     const proses = (list, sumber) => {
                         (list || []).forEach(det => {
                             if (!det.noFaktur) return;
-                            const info = rpHitungProfitFaktur(det.noFaktur, uangDiterimaMap);
+                            const info = rpHitungProfitFaktur(det.noFaktur);
                             rows.push({
                                 noFaktur: String(det.noFaktur).trim(),
                                 tglFaktur: info.tglFaktur || (det.tglFaktur ? toDateKey(det.tglFaktur) : ''),
@@ -10209,7 +10065,6 @@
                                 produk: info.produk.length ? info.produk.join(', ') : '-',
                                 sales: info.sales || det.sales || '-',
                                 qty: info.qty,
-                                uangDiterima: info.uangDiterima,
                                 profit: info.profit
                             });
                         });
@@ -10271,7 +10126,7 @@
             const tbody = document.getElementById('rpTableBody');
             if (pageRows.length === 0) {
                 tbody.innerHTML =
-                    '<tr><td colspan="9" class="empty-msg">📂 Tidak ada data yang sesuai filter.</td></tr>';
+                    '<tr><td colspan="8" class="empty-msg">📂 Tidak ada data yang sesuai filter.</td></tr>';
             } else {
                 tbody.innerHTML = pageRows.map((item, i) => {
                     const label = item.sumber === 'Cash' ? 'Cash Dropping' : 'Piutang Tempo';
@@ -10283,8 +10138,7 @@
                         <td>${escapeHtml(item.produk)}</td>
                         <td>${escapeHtml(item.sales)}</td>
                         <td class="num">${item.qty}</td>
-                        <td class="num">${fmtRp(item.uangDiterima)}</td>
-                        <td class="num" style="font-weight:600; color:${item.profit < 0 ? '#b91c1c' : '#15803d'};">${fmtRp(item.profit)}</td>
+                        <td class="num" style="font-weight:600;">${fmtRp(item.profit)}</td>
                     </tr>`;
                 }).join('');
             }
@@ -10866,7 +10720,7 @@
         document.getElementById('btnExportRP').addEventListener('click', function() {
             if (rpFiltered.length === 0) { showToast('Tidak ada data untuk diexport.', 'warning'); return; }
             const header = ['No.Faktur', 'Tgl Faktur', 'Sumber Uang', 'Tgl Uang Masuk', 'Produk', 'Sales',
-                'Qty', 'Uang Diterima', 'Profit'
+                'Qty', 'Profit'
             ];
             const rows = rpFiltered.map(item => [
                 item.noFaktur,
@@ -10876,7 +10730,6 @@
                 item.produk,
                 item.sales,
                 item.qty,
-                Math.round(item.uangDiterima),
                 Math.round(item.profit)
             ]);
             const delimiter = ';';
@@ -11081,7 +10934,7 @@
                 }
                 scheduleFitTableWraps();
 
-                console.log('✅ GAJAH MAS 2026 FINAL — Semua tab berfungsi.');
+                console.log('✅ GAMAS 2026 FINAL — Semua tab berfungsi.');
             } catch (err) {
                 console.error('Gagal inisialisasi database/aplikasi:', err);
                 showToast('❌ Gagal membuka database: ' + err.message + ' — lihat peringatan di atas.', 'warning');
@@ -11109,7 +10962,7 @@
         // LOGOUT
         // ================================================================
         async function handleLogoutClick() {
-            if (!confirm('Yakin mau logout dari GAJAH MAS 2026?')) return;
+            if (!confirm('Yakin mau logout dari GAMAS 2026?')) return;
             try {
                 await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
             } catch (e) { /* tetap lanjut reload walau request gagal, biar UI konsisten */ }
@@ -11151,7 +11004,7 @@
     <div id="authOverlay" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(31,78,120,0.92); align-items:center; justify-content:center; font-family:inherit;">
         <form id="authForm" onsubmit="handleAuthSubmit(event)" style="background:#fff; border-radius:12px; padding:32px 28px; width:90%; max-width:360px; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
             <input type="hidden" id="authMode" value="login">
-            <h2 id="authTitle" style="margin:0 0 6px; color:#1f4e78; font-size:20px;">🔒 Masuk ke GAJAH MAS 2026</h2>
+            <h2 id="authTitle" style="margin:0 0 6px; color:#1f4e78; font-size:20px;">🔒 Masuk ke GAMAS 2026</h2>
             <p style="margin:0 0 18px; color:#555; font-size:13px;">Login diperlukan supaya data hanya bisa diakses oleh tim kamu.</p>
             <label style="display:block; font-size:13px; margin-bottom:4px; color:#333;">Username</label>
             <input id="authUsername" type="text" autocomplete="username" required style="width:100%; padding:10px; margin-bottom:12px; border:1px solid #ccc; border-radius:6px; font-size:14px; box-sizing:border-box;">
